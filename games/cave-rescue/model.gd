@@ -114,7 +114,6 @@ func vapor_warning() -> bool:
 func pulse() -> void:
 	pulse_cd=0.3
 	pulse_flash=0.12
-	var target:=pos+Vector2(facing*140,0)
 	var limit:=140.0
 	for cell: Vector2i in cells:
 		var d:=center(cell)-pos
@@ -178,7 +177,7 @@ func step(input: Dictionary,dt: float,_rng: RandomNumberGenerator) -> Dictionary
 			return lose()
 	else:
 		grace=1.5
-	if pos.distance_to(scientist)<20 and (input.get("action",false) or input.get("fire",false)):
+	if pos.distance_to(scientist)<20 and input.get("action",false):
 		rescue_hold+=dt
 		if rescue_hold>=0.6-0.000001:
 			score+=600+int(floor(energy*3))

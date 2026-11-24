@@ -78,7 +78,7 @@ func neighbors(id: int) -> Array[int]:
 	if id%2==0: out.append(id+4 if id<4 else id-4)
 	return out
 func artifact_pos() -> Vector2:
-	return Vector2(530,FLOOR-20)
+	return Vector2(550,FLOOR-20)
 func lose() -> Dictionary:
 	lives-=1
 	if lives<=0:
@@ -161,7 +161,8 @@ func step(input: Dictionary,dt: float,_rng: RandomNumberGenerator) -> Dictionary
 			return {}
 		pos.x=W-HALF.x
 	if hazard:
-		hazard_pos=Vector2(465+sin(time*1.2)*35,FLOOR-12)
+		var hazard_center: float=140 if gap.size.x>0 and gap.position.x>350 else 450
+		hazard_pos=Vector2(hazard_center+sin(time*1.2)*20,FLOOR-12)
 		if immune<=0 and pos.distance_to(hazard_pos)<18:
 			return lose()
 	var id: int=(region-1)*8+room

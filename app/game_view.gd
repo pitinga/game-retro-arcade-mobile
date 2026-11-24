@@ -2,6 +2,8 @@ extends Control
 const Host=preload("res://core/session_host.gd")
 const Layout=preload("res://core/layout.gd")
 const Session=preload("res://core/session.gd")
+const Deep=preload("res://games/cave-rescue/model.gd")
+const Emerald=preload("res://games/jungle-expedition/model.gd")
 const Skyport=preload("res://games/terminal-chase/model.gd")
 const Abyss=preload("res://games/submarine-rescue/model.gd")
 const Polar=preload("res://games/ice-platformer/model.gd")
@@ -40,7 +42,7 @@ func configure(id: String,level: String,locale: String="pt",prefs: Dictionary={}
 	language=locale
 	left_handed=bool(prefs.get("left_handed",false))
 	control_opacity=clampf(float(prefs.get("control_opacity",100))/100.0,0.5,1.0)
-	landscape=id in ["G04","G05","G07","G09","G10"]
+	landscape=id in ["G04","G05","G06","G07","G08","G09","G10"]
 	run_seed=seed_value if seed_value!=0 else Time.get_ticks_usec()
 	best_score=int(prefs.get("best_score",0))
 	control_size=clampf(float(prefs.get("control_size",100))/100.0,0.5,1.5)
@@ -55,6 +57,8 @@ func _ready() -> void:
 		"G03": model=Brick.new()
 		"G04": model=Abyss.new()
 		"G05": model=Polar.new()
+		"G06": model=Deep.new()
+		"G08": model=Emerald.new()
 		"G07": model=Skyport.new()
 		"G09": model=Orbit.new()
 		"G10": model=Shield.new()
@@ -100,6 +104,14 @@ func _layout() -> void:
 			controls={"stick":Rect2(0,296,256,64),"fire":Rect2(368,296,136,64),"action":Rect2(504,296,136,64)}
 			if left_handed:
 				controls={"stick":Rect2(384,296,256,64),"fire":Rect2(0,296,136,64),"action":Rect2(136,296,136,64)}
+		"G06":
+			controls={"left":Rect2(0,296,96,64),"right":Rect2(96,296,96,64),"fire":Rect2(304,296,112,64),"action":Rect2(416,296,112,64),"secondary":Rect2(528,296,112,64)}
+			if left_handed:
+				controls={"left":Rect2(448,296,96,64),"right":Rect2(544,296,96,64),"fire":Rect2(0,296,112,64),"action":Rect2(112,296,112,64),"secondary":Rect2(224,296,112,64)}
+		"G08":
+			controls={"stick":Rect2(0,296,280,64),"fire":Rect2(360,296,140,64),"action":Rect2(500,296,140,64)}
+			if left_handed:
+				controls={"stick":Rect2(360,296,280,64),"fire":Rect2(0,296,140,64),"action":Rect2(140,296,140,64)}
 		"G07":
 			controls={"stick":Rect2(0,296,280,64),"action":Rect2(360,296,140,64),"secondary":Rect2(500,296,140,64)}
 			if left_handed:
@@ -169,6 +181,10 @@ func _show_intro() -> void:
 		message=t("Resgate cápsulas e pare na superfície para entregar e recarregar O2.","Rescue pods and stop at the surface to deliver and refill O2.")
 	elif game_id=="G05":
 		message=t("Escolha a direção, SALTE e segure REPARAR em três estações.","Choose direction, JUMP and hold REPAIR at three stations.")
+	elif game_id=="G06":
+		message=t("Voe com JET, use PULSO e CORTE. Afaste-se da carga e resgate com PULSO.","Hold JET, use PULSE and CUT. Move away from the charge, rescue with PULSE.")
+	elif game_id=="G08":
+		message=t("Explore, salte e use AÇÃO com direção para escalar. Reúna quatro artefatos e volte ao acampamento.","Explore, jump and hold ACTION with direction to climb. Collect four artifacts and return to camp.")
 	elif game_id=="G07":
 		message=t("Ative dois bloqueadores e intercepte o robô antes da fuga.","Activate two blockers, then intercept the robot before escape.")
 	elif game_id=="G09":
@@ -235,6 +251,10 @@ func _draw() -> void:
 		_draw_abyss()
 	elif game_id=="G05":
 		_draw_polar()
+	elif game_id=="G06":
+		_draw_deep()
+	elif game_id=="G08":
+		_draw_emerald()
 	elif game_id=="G07":
 		_draw_skyport()
 	elif game_id=="G09":
@@ -606,4 +626,121 @@ func _draw_skyport() -> void:
 		_txt(Vector2(200,70),t("ATIVE DOIS BLOQUEADORES","ACTIVATE TWO BLOCKERS"),14,GOLD)
 	for key: String in host.touch_regions:
 		var label: String={"stick":t("DIREÇÃO","STEER"),"action":t("INTERAGIR","INTERACT"),"secondary":"DASH"}[key]
+		_control(host.touch_regions[key],label)
+
+func _draw_deep() -> void:
+	_txt(Vector2(12,19),"DEEP SIGNAL",17,MINT)
+	_txt(Vector2(12,39),"%06d  %s %d%%  %s %d  F%02d/20  %s %d"%[model.score,t("ENERGIA","ENERGY"),int(model.energy),t("CORTES","CUTS"),model.charges,model.level,t("VIDAS","LIVES"),model.lives],14)
+	var shift:=Vector2(8,48)
+	draw_rect(Rect2(0,48,640,248),Color("#17283C"))
+	for cell: Vector2i in model.cells:
+		var p: Vector2=Vector2(cell)*Deep.TILE+shift
+		var box:=Rect2(p,Vector2.ONE*Deep.TILE)
+		var breakable: bool=model.cells[cell]=="B"
+		draw_rect(box,Color("#96683E") if breakable else Color("#35475C"))
+		draw_rect(box,GOLD if breakable else Color("#526882"),false,1)
+		if breakable:
+			draw_line(p+Vector2(4,4),p+Vector2(20,20),GOLD,2)
+			draw_line(p+Vector2(20,4),p+Vector2(4,20),GOLD,2)
+	for cell: Vector2i in model.hazards:
+		var p: Vector2=Vector2(cell)*Deep.TILE+shift
+		var active: bool=model.hazards[cell]=="W" or model.vapor_active()
+		draw_rect(Rect2(p,Vector2.ONE*24),Color("#A84950") if active else Color("#4D6479"))
+		_txt(p+Vector2(7,17),"!" if active or model.vapor_warning() else ".",16,WHITE)
+	for cell: Vector2i in model.batteries:
+		var p: Vector2=model.center(cell)+shift
+		draw_rect(Rect2(p-Vector2(8,10),Vector2(16,20)),MINT)
+		_txt(p+Vector2(-5,5),"+",16,BG)
+	for cell: Vector2i in model.enemies:
+		var p: Vector2=model.center(cell)+shift
+		draw_circle(p,10,Color("#F28D9B"))
+		draw_rect(Rect2(p-Vector2(5,3),Vector2(10,6)),BG)
+	var target: Vector2=model.scientist+shift
+	draw_circle(target,13,GOLD)
+	_txt(target+Vector2(-5,5),"R",16,BG)
+	var p: Vector2=model.pos+shift
+	draw_rect(Rect2(p-Vector2(8,9),Vector2(16,18)),WHITE)
+	draw_rect(Rect2(p+Vector2(-5,-5),Vector2(10,6)),Color("#18283D"))
+	if model.vel.y<0:
+		draw_line(p+Vector2(0,9),p+Vector2(0,19),MINT,3)
+	if model.pulse_flash>0:
+		draw_line(p,p+Vector2(model.facing*50,0),MINT,2)
+	if model.cut_timer>0:
+		var c: Vector2=model.center(model.cut_cell)+shift
+		draw_arc(c,36,0,TAU,32,GOLD,2)
+		_txt(c+Vector2(-16,-39),"%.1fs"%model.cut_timer,13,GOLD)
+	if model.energy<=0:
+		_txt(Vector2(10,64),t("SEM ENERGIA ","NO POWER ")+("%.1fs"%model.grace),14,GOLD)
+	if model.level>=11:
+		# Partial darkness outside the local viewport, keeping a clear hazard lookahead.
+		var near_x: float=clampf(p.x-160,0,640)
+		var far_x: float=clampf(p.x+180,0,640)
+		draw_rect(Rect2(0,48,near_x,240),Color(0.025,0.04,0.08,0.36))
+		draw_rect(Rect2(far_x,48,640-far_x,240),Color(0.025,0.04,0.08,0.36))
+	if model.rescue_hold>0:
+		draw_arc(target,18,-PI/2,-PI/2+TAU*model.rescue_hold/0.6,24,MINT,3)
+	for key: String in host.touch_regions:
+		var label: String={"left":"<","right":">","fire":"JET","action":t("PULSO","PULSE"),"secondary":t("CORTE","CUT")}[key]
+		_control(host.touch_regions[key],label)
+func _draw_emerald() -> void:
+	_txt(Vector2(12,19),"EMERALD EXPEDITION",17,MINT)
+	_txt(Vector2(12,39),"%06d  %s %d/4  %s %d/3  %s %d  %s %ds"%[model.score,t("ARTEFATOS","ARTIFACTS"),model.count_region(),t("REG","REG"),model.region,t("VIDAS","LIVES"),model.lives,t("BÔNUS","BONUS"),int(ceil(model.bonus))],13)
+	var shift:=Vector2(0,48)
+	draw_rect(Rect2(0,48,640,248),Color("#163A39"))
+	for i in range(7):
+		var x: float=float((i*109+model.room*31)%640)
+		draw_rect(Rect2(x,70,16,150),Color("#214F4A"))
+		draw_circle(Vector2(x+8,92),32,Color("#28645A"))
+	draw_rect(Rect2(0,48+Emerald.FLOOR,640,32),Color("#89755A"))
+	draw_line(Vector2(0,48+Emerald.FLOOR),Vector2(640,48+Emerald.FLOOR),MINT,2)
+	if model.gap.size.x>0:
+		var gap: Rect2=model.gap
+		gap.position+=shift
+		draw_rect(gap,BG)
+		var bridge:=Rect2(model.bridge_x-14,48+Emerald.FLOOR,28,6)
+		if model.collapse<1.0:
+			draw_rect(bridge,GOLD if model.collapse>=0.4 else Color("#B79A6B"))
+			draw_rect(bridge,WHITE,false,1)
+		if model.collapse>=0.4:
+			_txt(Vector2(model.bridge_x-10,48+Emerald.FLOOR-10),"!",16,GOLD)
+	if model.room%2==0:
+		for y in range(60,216,14):
+			draw_line(Vector2(309,y+48),Vector2(331,y+48),Color("#D5B47B"),3)
+		draw_line(Vector2(309,108),Vector2(309,264),Color("#D5B47B"),2)
+		draw_line(Vector2(331,108),Vector2(331,264),Color("#D5B47B"),2)
+		_txt(Vector2(337,118),"^" if model.room>=4 else "v",16,WHITE)
+	if model.room%4>0:
+		_txt(Vector2(12,240),"<",22,WHITE)
+	if model.room%4<3:
+		_txt(Vector2(615,240),">",22,WHITE)
+	if model.room==0:
+		draw_rect(Rect2(16,221,58,39),BG)
+		_txt(Vector2(20,245),t("BASE","CAMP"),14,MINT)
+	if model.room==4:
+		draw_rect(Rect2(54,221,52,39),BG)
+		_txt(Vector2(60,245),"CP",14,GOLD)
+	var id: int=(model.region-1)*8+model.room
+	if model.room in [1,3,5,7] and not model.collected.has(id):
+		var p: Vector2=model.artifact_pos()+shift
+		draw_colored_polygon(PackedVector2Array([p+Vector2(0,-12),p+Vector2(11,0),p+Vector2(0,12),p+Vector2(-11,0)]),GOLD)
+		draw_arc(p,15,0,TAU,24,WHITE,2)
+	if model.hazard:
+		var p: Vector2=model.hazard_pos+shift
+		draw_rect(Rect2(p-Vector2(14,8),Vector2(28,16)),Color("#F28D9B"))
+		draw_rect(Rect2(p-Vector2(14,8),Vector2(28,16)),BG,false,2)
+	var p: Vector2=model.pos+shift
+	draw_rect(Rect2(p-Vector2(8,10),Vector2(16,20)),WHITE)
+	draw_rect(Rect2(p-Vector2(9,11),Vector2(18,5)),MINT)
+	if model.immune>0:
+		draw_arc(p,15,0,TAU,20,GOLD,2)
+	# Mini map of the eight rooms of this region, above the field.
+	for cell in range(8):
+		var box:=Rect2(468+(cell%4)*22,54+int(cell/4.0)*16,18,12)
+		var seen: bool=model.visited.has((model.region-1)*8+cell)
+		draw_rect(box,BG if not seen else Color("#52756B"))
+		draw_rect(box,WHITE if cell==model.room else Color("#8295B0"),false,2)
+		if cell==model.room:
+			draw_circle(box.get_center(),3,GOLD)
+	for key: String in host.touch_regions:
+		var label: String={"stick":t("DIREÇÃO","STEER"),"fire":t("SALTO","JUMP"),"action":t("AÇÃO","ACTION")}[key]
 		_control(host.touch_regions[key],label)
