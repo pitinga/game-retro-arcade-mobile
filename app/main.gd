@@ -10,6 +10,9 @@ var level: String = "normal"
 var shell: MarginContainer
 var content: VBoxContainer
 var _status: Label
+var active_game: Control
+const GameView = preload("res://app/game_view.gd")
+const READY_GAMES = ["G03","G09","G10"]
 const BG := Color("#101522")
 const SURFACE := Color("#202a3c")
 const TEXT := Color("#f5f7ff")
@@ -100,13 +103,21 @@ func _button(value: String, action: Callable, parent: Control = null) -> Button:
 	button.pressed.connect(action)
 	return button
 
+func qa_enabled() -> bool:
+	# The export tag alone is insufficient: release templates always deny QA.
+	return OS.is_debug_build() and OS.has_feature("qa_arcade")
+func can_play(id: String) -> bool:
+	return commerce.can_access(id) or (qa_enabled() and id in READY_GAMES)
 func _catalog() -> void:
+	active_game=null
 	page = "catalog"
 	selected = ""
 	if OS.has_feature("android"):
 		DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
 	_reset("RETRO ARCADE")
 	_label(tr2("10 mundos · versão em desenvolvimento","10 worlds · development version"))
+	if qa_enabled():
+		_label("QA DEBUG · PRO TEST ONLY",16,GOLD)
 	_button(tr2("Configurações","Settings"),_settings)
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -114,7 +125,7 @@ func _catalog() -> void:
 	grid.add_theme_constant_override("v_separation",10)
 	content.add_child(grid)
 	for item: Dictionary in Catalog.ITEMS:
-		var lock_text := " · PRO" if not commerce.can_access(item.id) else ""
+		var lock_text := " · QA PRO" if qa_enabled() and not commerce.can_access(item.id) and item.id in READY_GAMES else (" · PRO" if not commerce.can_access(item.id) else "")
 		var orientation := tr2(" · Girar"," · Rotate") if item.landscape else ""
 		var title: String = item.name+"\n"+str(item[storage.prefs.language])+lock_text+orientation
 		var card := _button(title,_details.bind(item.id),grid)
@@ -133,7 +144,7 @@ func _details(id: String) -> void:
 	_button(tr2("Voltar","Back"),_catalog)
 	_label(str(item[storage.prefs.language]))
 	_label(tr2("Paisagem · gire o aparelho","Landscape · rotate device") if item.landscape else tr2("Retrato","Portrait"))
-	if not commerce.can_access(id):
+	if not can_play(id):
 		_label(tr2("Conteúdo PRO · desbloqueio indisponível nesta versão.","PRO content · unlock unavailable in this build."),16,GOLD)
 		_button(tr2("Conhecer PRO","About PRO"),_upgrade)
 		return
@@ -144,9 +155,53 @@ func _details(id: String) -> void:
 	option.select(["easy","normal","hard"].find(level))
 	content.add_child(option)
 	option.item_selected.connect(func(index: int) -> void: level = ["easy","normal","hard"][index])
-	_label(tr2("Recorde: — (jogo ainda não implementado)","Best: — (game not implemented yet)"))
-	var play := _button(tr2("Em breve · gameplay pendente","Coming soon · gameplay pending"),func() -> void: pass)
-	play.disabled = true
+	var record_key:=id+":"+level+":1"
+	_label(tr2("Recorde: ","Best: ")+str(storage.records.get(record_key,0)))
+	if id in READY_GAMES:
+		_button(tr2("Jogar","Play"),_prepare_game.bind(id))
+	else:
+		var play := _button(tr2("Em breve · gameplay pendente","Coming soon · gameplay pending"),func() -> void: pass)
+		play.disabled=true
+
+func _prepare_game(id: String) -> void:
+	if not can_play(id) or not id in READY_GAMES:
+		_details(id)
+		return
+	if Catalog.find(id).landscape:
+		page="prepare"
+		_reset(tr2("Gire o aparelho","Rotate your device"))
+		_label(tr2("Este jogo usa paisagem. Gire o aparelho antes de jogar.","This game uses landscape. Rotate your device before playing."))
+		_button(tr2("Continuar","Continue"),_start_game.bind(id))
+		_button(tr2("Voltar","Back"),_details.bind(id))
+	else:
+		_start_game(id)
+func _start_game(id: String) -> void:
+	if not can_play(id) or not id in READY_GAMES:
+		_details(id)
+		return
+	page="game"
+	selected=id
+	if OS.has_feature("android"):
+		DisplayServer.screen_set_orientation(DisplayServer.SCREEN_LANDSCAPE if Catalog.find(id).landscape else DisplayServer.SCREEN_PORTRAIT)
+	for node: Node in get_children():
+		remove_child(node)
+		node.queue_free()
+	shell=null
+	var view:=GameView.new()
+	var prefs: Dictionary=storage.prefs.duplicate(true)
+	prefs["best_score"]=storage.records.get(id+":"+level+":1",0)
+	view.configure(id,level,storage.prefs.language,prefs)
+	active_game=view
+	view.exit_requested.connect(_catalog)
+	view.restart_requested.connect(_start_game.bind(id))
+	view.completed.connect(_game_completed.bind(id,level))
+	add_child(view)
+	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+func _game_completed(result: Dictionary,id: String,difficulty: String) -> void:
+	if not commerce.can_access(id):
+		return # QA PRO must not write commercial records.
+	storage.record(id,difficulty,"1",int(result.get("score",0)))
+	# Commerce is intentionally not integrated; no ads in M2.
 
 func _upgrade() -> void:
 	page = "upgrade"
@@ -205,10 +260,13 @@ func _notification(what: int) -> void:
 		_handle_back()
 
 func back_action() -> String:
-	return "exit" if page == "catalog" else "catalog"
+	return "exit" if page == "catalog" else ("pause" if page=="game" else "catalog")
 func _handle_back() -> void:
 	if back_action() == "exit":
 		get_tree().quit()
+	elif back_action()=="pause":
+		if is_instance_valid(active_game):
+			active_game.call("back")
 	else:
 		_catalog()
 

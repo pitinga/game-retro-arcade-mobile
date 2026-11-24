@@ -46,6 +46,7 @@ func advance(delta: float) -> int:
 		tick += 1
 		steps += 1
 		var terminal: Variant = model.call("step", _input.duplicate(true), STEP, rng)
+		_input.erase("pressed") # one edge per simulation tick
 		if terminal is Dictionary and not terminal.is_empty():
 			finish(terminal)
 	if steps == MAX_STEPS:

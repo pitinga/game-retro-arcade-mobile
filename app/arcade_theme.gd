@@ -21,7 +21,7 @@ static func build() -> Theme:
 	t.default_font_size=16
 	for kind: String in ["Button","CheckButton","OptionButton"]:
 		for state: String in ["normal","hover","pressed","disabled","focus"]:
-			t.set_stylebox(state,kind,box(BG if state in ["pressed","disabled","focus"] else SURFACE,MINT if state in ["hover","focus"] else BORDER))
+			t.set_stylebox(state,kind,box(Color("#303B50") if state=="disabled" else (BG if state in ["pressed","focus"] else SURFACE),MINT if state in ["hover","focus","pressed"] else BORDER))
 		for key: String in ["font_color","font_hover_color","font_pressed_color","font_focus_color","font_disabled_color"]:
 			t.set_color(key,kind,MUTED if key=="font_disabled_color" else TEXT)
 	t.set_color("font_color","Label",TEXT)
