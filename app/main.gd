@@ -12,7 +12,7 @@ var content: VBoxContainer
 var _status: Label
 var active_game: Control
 const GameView = preload("res://app/game_view.gd")
-const READY_GAMES = ["G01","G02","G03","G09","G10"]
+const READY_GAMES = ["G01","G02","G03","G04","G05","G09","G10"]
 const BG := Color("#101522")
 const SURFACE := Color("#202a3c")
 const TEXT := Color("#f5f7ff")

@@ -1,0 +1,2 @@
+# Review M4 11:45
+M4-001 prazo/rajada sinalizada; M4-002 símbolos OK/! e contorno escuro; M4-003 agentes input-only, gate exato, fita de replay analógica e bordas; M4-004 captura com carga/salto, persistência após CI; M4-005 rota rasa separada; M4-006 deadzone 8u; M4-007 stick direcional; M4-008 bônus só carga cheia. M3R-001 reset de rota com bônus único, M3R-002 múltiplos grupos/cap, M3R-003 avisos maiores e símbolo contrastante, M3R-004 estrada clareada. GDD/CHANGELOG atualizados. Solver formal, aparelho e revisão independente seguem pendentes.
