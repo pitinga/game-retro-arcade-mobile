@@ -94,6 +94,9 @@ jobs:
           set -o pipefail
           timeout 90s godot --headless --path . --script res://tests/test_m4.gd 2>&1 | tee /tmp/test-m4.log
           grep -Fx 'M4 failures: 0' /tmp/test-m4.log
+          grep -Fx 'ABYSS AGENT SUMMARY 12/12' /tmp/test-m4.log
+          grep -Fx 'POLAR AGENT SUMMARY 12/12' /tmp/test-m4.log
+          grep -Fx 'POLAR NAIVE SUMMARY 12/12' /tmp/test-m4.log
           if grep -E 'SCRIPT ERROR|Parse Error' /tmp/test-m4.log; then exit 1; fi
 
       - name: G10 reference player

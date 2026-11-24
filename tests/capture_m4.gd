@@ -1,4 +1,5 @@
 extends SceneTree
+const Agents=preload("res://tests/m4_agents.gd")
 const View=preload("res://app/game_view.gd")
 func _initialize() -> void:
 	call_deferred("run")
@@ -18,7 +19,7 @@ func snap(name: String) -> bool:
 	return false
 func run() -> void:
 	for id: String in ["G04","G05"]:
-		for dims: Vector2i in ([Vector2i(360,640),Vector2i(360,800)] if id=="G03" else [Vector2i(640,360),Vector2i(800,360)]):
+		for dims: Vector2i in [Vector2i(640,360),Vector2i(800,360)]:
 			root.size=dims
 			var view:=View.new()
 			view.configure(id,"normal","pt",{},42)
@@ -27,20 +28,14 @@ func run() -> void:
 			await process_frame
 			view._resume()
 			view.host.set_process(false)
-			for tick in range(360):
-				var input: Dictionary={}
-				if id=="G04":
-					input={"down":tick<60,"right":tick>=60 and tick<120,"fire":true}
-				elif id=="G05":
-					input={"action":true}
-				elif id=="G03" and tick==60:
-					input={"pressed":{"fire":Vector2.ZERO}}
-				elif id=="G09":
-					input={"fire":true,"up":true,"right":tick<50}
-				elif id=="G10" and tick in [60,120]:
-					input={"pressed":{"aim":Vector2(170+tick,160)}}
+			for tick in range(2400):
+				var input: Dictionary=Agents.abyss_input(view.model) if id=="G04" else Agents.polar_input(view.model)
 				view.host.session.set_input(input)
-				view.host.session.advance(1.0/60.0)
+				view.host.session.advance(1.0/60)
+				if id=="G04" and view.model.cargo>0:
+					break
+				if id=="G05" and view.model.repaired[0] and view.model.jump_left>0:
+					break
 			view.queue_redraw()
 			var tag:=id+"-"+str(dims.x)+"x"+str(dims.y)
 			if not await snap(tag+"-game"):

@@ -2,6 +2,7 @@ extends SceneTree
 const Abyss=preload("res://games/submarine-rescue/model.gd")
 const Polar=preload("res://games/ice-platformer/model.gd")
 const Session=preload("res://core/session.gd")
+const Agents=preload("res://tests/m4_agents.gd")
 const View=preload("res://app/game_view.gd")
 var failures: int=0
 var rng:=RandomNumberGenerator.new()
@@ -11,13 +12,34 @@ func check(ok: bool,label: String) -> void:
 		push_error(label)
 func _initialize() -> void:
 	call_deferred("run")
-func replay(script: GDScript,fps: int) -> String:
+func input_for(s: RefCounted) -> Dictionary:
+	return Agents.abyss_input(s.model) if s.model.get_script()==Abyss else Agents.polar_input(s.model)
+func tape(script: GDScript) -> Array[Dictionary]:
 	var s:=Session.new()
 	s.configure(script.new(),42,"normal")
 	s.start()
-	for frame in range(fps*12):
-		s.set_input({"right":true,"down":true,"fire":true,"action":true})
-		s.advance(1.0/fps)
+	var result: Array[Dictionary]=[]
+	for block in range(1800):
+		var input:=input_for(s)
+		result.append(input)
+		s.set_input(input)
+		s.advance(2.0/60)
+		if s.state!=Session.State.RUNNING:
+			break
+	check(s.model.score>=200 if script==Abyss else s.model.score>=360,"M4 replay meaningful "+script.resource_path)
+	return result
+func replay(script: GDScript,fps: int,inputs: Array[Dictionary]) -> String:
+	var s:=Session.new()
+	s.configure(script.new(),42,"normal")
+	s.start()
+	var frames_per_block:=int(fps/30)
+	for input: Dictionary in inputs:
+		for frame in range(frames_per_block):
+			var snapshot:=input.duplicate(true)
+			if fps>30 and frame!=(1 if fps==120 else 0):
+				snapshot.erase("pressed")
+			s.set_input(snapshot)
+			s.advance(1.0/fps)
 	var fields: Dictionary={}
 	for prop: Dictionary in s.model.get_property_list():
 		if int(prop.usage)&PROPERTY_USAGE_SCRIPT_VARIABLE:
@@ -72,9 +94,9 @@ func run() -> void:
 		check(a.capsules.size()>0 and a.capsules.size()<=6 and a.enemies.size()<=8,"AC-G04-04 caps")
 		var c: Vector2=a.capsules[0].pos
 		var trip:=2*(absf(c.x-a.pos.x)/(0.48*Abyss.W)+absf(c.y-a.pos.y)/(0.65*Abyss.H))
-		check(trip*7<100 and c.y<0.45*Abyss.H,"AC-G04-04 shallow return budget")
+		check(trip*7<100 and c.y<0.40*Abyss.H,"AC-G04-04 shallow return budget")
 		for e: Dictionary in a.enemies:
-			check(e.pos.y>=0.18*Abyss.H,"AC-G04-04 safe surface")
+			check(e.pos.y-c.y>Abyss.R+12,"AC-G04-04 safe surface")
 	var p:=Polar.new()
 	p.create(rng,"normal")
 	var start:=p.pos
@@ -116,6 +138,52 @@ func run() -> void:
 		check(p.platforms.size()==18 and p.stations.size()==3,"AC-G05-04 platform count")
 		for platform: Dictionary in p.platforms:
 			check(Rect2(0,0,Polar.W,Polar.H).has_point(platform.pos),"AC-G05-04 bounds")
+	# Real input-only reference agents, twelve seeds per game.
+	var abyss_ok: int=0
+	var polar_ok: int=0
+	var naive_fail: int=0
+	for seed in range(12):
+		rng.seed=seed
+		a.create(rng,["easy","normal","hard"][seed%3])
+		var initial:=a.lives
+		var min_oxygen: float=100
+		for tick in range(7200):
+			var result:=a.step(Agents.abyss_input(a),1.0/60,rng)
+			min_oxygen=minf(min_oxygen,a.oxygen)
+			if not result.is_empty() or a.wave>1:
+				break
+		if a.wave>1 and a.lives==initial and min_oxygen>0:
+			abyss_ok+=1
+		print("ABYSS AGENT seed=",seed," wave=",a.wave," min_o2=",min_oxygen," lives=",a.lives)
+		rng.seed=seed
+		p.create(rng,["easy","normal","hard"][seed%3])
+		p.phase=2
+		p.setup(rng)
+		initial=p.lives
+		for tick in range(6000):
+			var result:=p.step(Agents.polar_input(p),1.0/60,rng)
+			if not result.is_empty() or p.phase>2:
+				break
+		if p.phase>2 and p.lives==initial:
+			polar_ok+=1
+		print("POLAR AGENT seed=",seed," phase=",p.phase," lives=",p.lives)
+		rng.seed=seed
+		p.create(rng,["easy","normal","hard"][seed%3])
+		p.phase=2
+		p.setup(rng)
+		initial=p.lives
+		for tick in range(6000):
+			var result:=p.step(Agents.polar_input(p,true),1.0/60,rng)
+			if not result.is_empty() or p.phase>2:
+				break
+		if p.phase==2 or p.lives<initial:
+			naive_fail+=1
+	print("ABYSS AGENT SUMMARY ",abyss_ok,"/12")
+	print("POLAR AGENT SUMMARY ",polar_ok,"/12")
+	print("POLAR NAIVE SUMMARY ",naive_fail,"/12")
+	check(abyss_ok==12,"M4-003 Abyss agent")
+	check(polar_ok==12,"M4-003 Polar agent")
+	check(naive_fail==12,"M4-001 naive agent")
 	# Actual simulation pause for both modules.
 	for script: GDScript in [Abyss,Polar]:
 		var s:=Session.new()
@@ -124,8 +192,9 @@ func run() -> void:
 		s.pause()
 		s.advance(2)
 		check(s.tick==0,"M4 pause "+script.resource_path)
-		var hash:=replay(script,60)
-		check(hash==replay(script,30) and hash==replay(script,120),"M4 replay "+script.resource_path)
+		var inputs:=tape(script)
+		var hash:=replay(script,60,inputs)
+		check(hash==replay(script,30,inputs) and hash==replay(script,120,inputs),"M4 replay "+script.resource_path)
 		print("REPLAY ",script.resource_path," ",hash)
 	for id: String in ["G04","G05"]:
 		var view:=View.new()
