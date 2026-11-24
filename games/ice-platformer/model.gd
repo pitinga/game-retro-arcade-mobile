@@ -67,22 +67,27 @@ func update_platforms(dt: float) -> void:
 # Directional jump assistance predicts moving platforms at landing time.
 func target_in_direction() -> Vector2:
 	return target_for(direction)
-func target_for(dir: Vector2) -> Vector2:
-	var best:=pos+dir*0.20*W
-	var best_distance: float=INF
+func predicted_platform(index: int,lead: float) -> Vector2:
+	var platform: Dictionary=platforms[index]
 	var angular:=float([0.12,0.17,0.22][difficulty])*W/75
+	var angle:=float(platform.angle)+angular*lead
+	return stations[platform.station]+Vector2(cos(angle)*83,sin(angle)*56)
+func target_for(dir: Vector2,lead: float=0.0) -> Vector2:
+	var origin:=predicted_platform(support,lead) if support>=0 else pos
+	var best:=origin+dir*0.20*W
+	var best_cost: float=INF
 	var candidates: Array[Vector2]=stations.duplicate()
-	for platform: Dictionary in platforms:
-		var angle:=float(platform.angle)+angular*JUMP
-		candidates.append(stations[platform.station]+Vector2(cos(angle)*83,sin(angle)*56))
+	for index in platforms.size():
+		candidates.append(predicted_platform(index,JUMP+lead))
 	for candidate: Vector2 in candidates:
-		var delta:=candidate-pos
+		var delta:=candidate-origin
 		var distance:=delta.length()
 		if distance<30 or distance>0.20*W or delta.normalized().dot(dir)<0.78:
 			continue
-		var cost:=absf(0.20*W-distance)+(1-delta.normalized().dot(direction))*100
-		if cost<best_distance:
-			best_distance=cost
+		# Prefer aim precision over distance, so direct aim reliably selects a platform.
+		var cost: float=(1-delta.normalized().dot(dir))*1000+distance*0.01
+		if cost<best_cost:
+			best_cost=cost
 			best=candidate
 	return best.clamp(Vector2(R,R),Vector2(W-R,H-R))
 func station_at(point: Vector2) -> int:
