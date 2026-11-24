@@ -672,7 +672,7 @@ func _draw_deep() -> void:
 		draw_rect(Rect2(p-Vector2(8,10),Vector2(16,20)),MINT)
 		_txt(p+Vector2(-5,5),"+",16,BG)
 	for cell: Vector2i in model.enemies:
-		var p: Vector2=model.center(cell)+shift
+		var p: Vector2=model.enemy_pos(cell)+shift
 		draw_circle(p,10,Color("#F28D9B"))
 		draw_rect(Rect2(p-Vector2(5,3),Vector2(10,6)),BG)
 	var target: Vector2=model.scientist+shift
@@ -711,7 +711,7 @@ func _draw_emerald() -> void:
 		var gap: Rect2=model.gap
 		gap.position+=shift
 		draw_rect(gap,BG)
-		var bridge:=Rect2(model.bridge_x-14,48+Emerald.FLOOR,28,6)
+		var bridge:=Rect2(model.bridge_x-24,48+Emerald.FLOOR,48,6)
 		if model.collapse<1.0:
 			draw_rect(bridge,GOLD if model.collapse>=0.4 else Color("#B79A6B"))
 			draw_rect(bridge,WHITE,false,1)
@@ -738,6 +738,10 @@ func _draw_emerald() -> void:
 		var p: Vector2=model.artifact_pos()+shift
 		draw_colored_polygon(PackedVector2Array([p+Vector2(0,-12),p+Vector2(11,0),p+Vector2(0,12),p+Vector2(-11,0)]),GOLD)
 		draw_arc(p,15,0,TAU,24,WHITE,2)
+	if model.overhead:
+		var q: Vector2=model.overhead_pos+shift
+		draw_circle(q,11,Color("#FFCB83"))
+		draw_arc(q,11,0,TAU,20,WHITE,2)
 	if model.hazard:
 		var p: Vector2=model.hazard_pos+shift
 		draw_rect(Rect2(p-Vector2(14,8),Vector2(28,16)),Color("#F28D9B"))

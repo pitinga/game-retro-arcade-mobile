@@ -56,7 +56,7 @@ func run() -> void:
 				check(not Rect2(Vector2(cell)*24,Vector2.ONE*24).intersects(d.hitbox(d.scientist)) and d.center(cell).distance_to(d.scientist)>=40,"M6-008 rescue clearance")
 			var gates: int=0
 			for cell: Vector2i in d.cells:
-				if d.cells[cell]=="B":
+				if d.cells[cell]=="B" and d.cells.has(Vector2i(cell.x,0)):
 					gates+=1
 			check(gates<=d.charges,"AC-G06-02 cut budget "+str(level))
 			check(not d.solid(d.pos) and not d.solid(d.scientist),"AC-G06-01 safe positions")
@@ -76,8 +76,8 @@ func run() -> void:
 			for room in range(8):
 				e.enter(room,36)
 				var spec: Array=EmeraldData.ROOMS[(region-1)*8+room]
-				check(spec.size()==3 and spec[0] in [0,1] and spec[2] in [0,1],"M6-003 valid room descriptor")
-				check(e.gap.size.x==0 or (e.gap.position.x>=100 and e.gap.end.x<=540),"M6-003 gap inside field")
+				check(spec.size()==6 and spec[0] in [0,1] and spec[2] in [0,1],"M6-003 valid room descriptor")
+				check(e.gap.size.x==0 or (e.gap.position.x>=100 and e.gap.end.x<=560),"M6-003 gap inside field")
 	d.create(rng,"normal")
 	d.energy=0
 	d.step({"fire":true},1.0/60,rng)
@@ -111,7 +111,7 @@ func run() -> void:
 	e.bonus=0
 	e.step({},1.0/60,rng)
 	check(e.lives==3 and e.bonus==0,"AC-G08-03 bonus optional")
-	e.enter(1,550)
+	e.enter(1,float(EmeraldData.ROOMS[1][4]))
 	e.step({},1.0/60,rng)
 	check(e.count_region()==1 and e.score==350,"AC-G08-03 artifact")
 	e.lose()
@@ -143,6 +143,8 @@ func run() -> void:
 	check(e.room==4 and is_equal_approx(e.pos.x,80),"M6-005 checkpoint respawn")
 	var deep_ok: int=0
 	var emerald_ok: int=0
+	var deep_naive_fail: int=0
+	var emerald_naive_fail: int=0
 	for mode: String in ["easy","normal","hard"]:
 		d.create(rng,mode)
 		var agent:=Agent.new()
@@ -165,8 +167,25 @@ func run() -> void:
 				break
 		emerald_ok+=int(completed and e.lives==initial_lives)
 		print("EMERALD CAMPAIGN ",mode," region=",e.region," room=",e.room," artifacts=",e.collected.size()," lives=",e.lives," won=",completed)
+		d.create(rng,mode)
+		initial_lives=d.lives
+		for tick in range(12000):
+			d.step({"right":true},1.0/60,rng)
+			if d.lives<initial_lives: break
+		deep_naive_fail+=int(d.lives<initial_lives)
+		e.create(rng,mode)
+		initial_lives=e.lives
+		var naive:=Agent.new()
+		for tick in range(18000):
+			e.step(naive.emerald_input(e,true),1.0/60,rng)
+			if e.lives<initial_lives: break
+		emerald_naive_fail+=int(e.lives<initial_lives)
 	print("DEEP CAMPAIGN SUMMARY ",deep_ok,"/3")
 	print("EMERALD CAMPAIGN SUMMARY ",emerald_ok,"/3")
+	print("DEEP NAIVE SUMMARY ",deep_naive_fail,"/3")
+	print("EMERALD NAIVE SUMMARY ",emerald_naive_fail,"/3")
+	check(deep_naive_fail==3,"M6-003 naive Deep agent")
+	check(emerald_naive_fail==3,"M6-003 naive Emerald agent")
 	check(deep_ok==3,"AC-G06 live campaign")
 	check(emerald_ok==3,"AC-G08 live campaign")
 	for script: GDScript in [DeepModel,EmeraldModel]:

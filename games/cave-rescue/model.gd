@@ -54,7 +54,7 @@ func load_level() -> void:
 	vel=Vector2.ZERO
 	grounded=true
 	facing=1
-	energy=100
+	energy=100 if level<=2 else float([85,78,70][difficulty])
 	charges=[4,3,2][difficulty]
 	grace=1.5
 	time=0
@@ -111,7 +111,10 @@ func vapor_active() -> bool:
 	return fposmod(time,4.0)>=2.8
 func vapor_warning() -> bool:
 	return fposmod(time,4.0)>=1.8 and not vapor_active()
+func enemy_pos(cell: Vector2i) -> Vector2:
+	return center(cell)+Vector2(sin(time*2.1+cell.x)*8,0)
 func pulse() -> void:
+	energy=maxf(0,energy-2)
 	pulse_cd=0.3
 	pulse_flash=0.12
 	var limit:=140.0
@@ -121,7 +124,7 @@ func pulse() -> void:
 			limit=minf(limit,absf(d.x)-12)
 	for i in range(enemies.size()-1,-1,-1):
 		var cell:=enemies[i]
-		var d:=center(cell)-pos
+		var d:=enemy_pos(cell)-pos
 		if d.x*facing>=0 and absf(d.x)<=limit and absf(d.y)<17:
 			enemies.remove_at(i)
 			award("enemy:"+str(cell),75)
@@ -136,7 +139,7 @@ func step(input: Dictionary,dt: float,_rng: RandomNumberGenerator) -> Dictionary
 	var jet: bool=(input.get("fire",false) or input.get("up",false)) and energy>0
 	vel.x=axis*145 if axis!=0 else move_toward(vel.x,0,900*dt if grounded else 420*dt)
 	vel.y=clampf(vel.y+(520-760*int(jet))*dt,-160,160)
-	energy=maxf(0,energy-(0.8+float([7,9,11][difficulty])*int(jet))*dt)
+	energy=maxf(0,energy-(float([2.5,3.0,3.5][difficulty])+float([7,9,11][difficulty])*int(jet))*dt)
 	if not move_axis(vel.x*dt,true):
 		vel.x=0
 	grounded=false
@@ -166,7 +169,7 @@ func step(input: Dictionary,dt: float,_rng: RandomNumberGenerator) -> Dictionary
 			batteries.remove_at(i)
 			award("battery:"+str(cell),100)
 	for cell: Vector2i in enemies:
-		if pos.distance_to(center(cell))<17:
+		if pos.distance_to(enemy_pos(cell))<17:
 			return lose()
 	for cell: Vector2i in hazards:
 		if hitbox(pos).intersects(Rect2(Vector2(cell)*TILE,Vector2.ONE*TILE)) and (hazards[cell]=="W" or vapor_active()):

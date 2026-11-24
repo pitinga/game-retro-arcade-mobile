@@ -116,6 +116,8 @@ jobs:
           grep -Fx 'M6 failures: 0' /tmp/test-m6.log
           grep -Fx 'DEEP CAMPAIGN SUMMARY 3/3' /tmp/test-m6.log
           grep -Fx 'EMERALD CAMPAIGN SUMMARY 3/3' /tmp/test-m6.log
+          grep -Fx 'DEEP NAIVE SUMMARY 3/3' /tmp/test-m6.log
+          grep -Fx 'EMERALD NAIVE SUMMARY 3/3' /tmp/test-m6.log
           if grep -E 'SCRIPT ERROR|Parse Error' /tmp/test-m6.log; then exit 1; fi
 
       - name: G10 reference player

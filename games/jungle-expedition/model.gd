@@ -33,6 +33,9 @@ var bridge_previous: float=0
 var collapse: float=0
 var gap:=Rect2()
 var hazard: bool=false
+var artifact_x: float=550
+var overhead: bool=false
+var overhead_pos:=Vector2.ZERO
 var hazard_pos:=Vector2.ZERO
 func create(_rng: RandomNumberGenerator,mode: String) -> void:
 	difficulty=["easy","normal","hard"].find(mode)
@@ -63,8 +66,11 @@ func enter(id: int,x: float) -> void:
 	transition_cd=0.25
 	collapse=0
 	var spec: Array=Data.ROOMS[(region-1)*8+room]
-	gap=Rect2(float(spec[1]),FLOOR,48,32) if spec[0]==1 else Rect2()
+	gap=Rect2(float(spec[1]),FLOOR,float(spec[3]),32) if spec[0]==1 else Rect2()
 	hazard=spec[2]==1
+	artifact_x=float(spec[4])
+	overhead=spec[5]==1
+	overhead_pos=Vector2(190,155)
 	bridge_x=gap.get_center().x
 	bridge_previous=bridge_x
 	hazard_pos=Vector2(500,FLOOR-12)
@@ -80,7 +86,7 @@ func neighbors(id: int) -> Array[int]:
 	if id in Data.LADDERS: out.append(id+4 if id<4 else id-4)
 	return out
 func artifact_pos() -> Vector2:
-	return Vector2(550,FLOOR-20)
+	return Vector2(artifact_x,FLOOR-20)
 func lose() -> Dictionary:
 	lives-=1
 	if lives<=0:
@@ -110,7 +116,7 @@ func step(input: Dictionary,dt: float,_rng: RandomNumberGenerator) -> Dictionary
 		coyote=maxf(0,coyote-dt)
 	if not gap.size.is_zero_approx():
 		bridge_previous=bridge_x
-		bridge_x=gap.get_center().x+sin(time*1.4)*12
+		bridge_x=gap.get_center().x+sin(time*1.4)*10
 		if on_bridge:
 			pos.x+=bridge_x-bridge_previous
 			collapse+=dt
@@ -143,7 +149,7 @@ func step(input: Dictionary,dt: float,_rng: RandomNumberGenerator) -> Dictionary
 		var old:=pos
 		pos+=vel*dt
 		var over_gap: bool=gap.size.x>0 and pos.x>gap.position.x+5 and pos.x<gap.end.x-5
-		var bridge_safe: bool=over_gap and absf(pos.x-bridge_x)<14 and collapse<1.0
+		var bridge_safe: bool=over_gap and absf(pos.x-bridge_x)<24 and collapse<1.0
 		grounded=false
 		on_bridge=false
 		if vel.y>=0 and old.y+HALF.y<=FLOOR+0.01 and pos.y+HALF.y>=FLOOR and (not over_gap or bridge_safe):
@@ -167,6 +173,10 @@ func step(input: Dictionary,dt: float,_rng: RandomNumberGenerator) -> Dictionary
 		var hazard_center: float=140 if gap.size.x>0 and gap.position.x>350 else 450
 		hazard_pos=Vector2(hazard_center+sin(time*1.2)*20,FLOOR-12)
 		if immune<=0 and pos.distance_to(hazard_pos)<18:
+			return lose()
+	if overhead:
+		overhead_pos=Vector2(190+sin(time*1.5)*30,150+sin(time*2.2)*8)
+		if immune<=0 and pos.distance_to(overhead_pos)<18:
 			return lose()
 	var id: int=(region-1)*8+room
 	if room in Data.ARTIFACTS and not collected.has(id) and pos.distance_to(artifact_pos())<22:
