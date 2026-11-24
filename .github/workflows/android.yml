@@ -56,10 +56,17 @@ jobs:
         run: bash .github/scripts/verify-godot.sh
 
       - name: Importar projeto
-        run: godot --headless --path . --editor --import --quit
+        run: |
+          set -o pipefail
+          timeout 90s godot --headless --path . --editor --import --quit 2>&1 | tee /tmp/import.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Compilation failed' /tmp/import.log; then exit 1; fi
 
       - name: Testar foundation
-        run: godot --headless --path . --script res://tests/test_m1.gd
+        run: |
+          set -o pipefail
+          timeout 90s godot --headless --path . --script res://tests/test_m1.gd 2>&1 | tee /tmp/test-m1.log
+          grep -Fx 'M1 failures: 0' /tmp/test-m1.log
+          if grep -E 'SCRIPT ERROR|Parse Error' /tmp/test-m1.log; then exit 1; fi
 
       - name: Testar M2
         run: |
