@@ -12,7 +12,7 @@ var content: VBoxContainer
 var _status: Label
 var active_game: Control
 const GameView = preload("res://app/game_view.gd")
-const READY_GAMES = ["G03","G09","G10"]
+const READY_GAMES = ["G01","G02","G03","G09","G10"]
 const BG := Color("#101522")
 const SURFACE := Color("#202a3c")
 const TEXT := Color("#f5f7ff")
@@ -260,13 +260,15 @@ func _notification(what: int) -> void:
 		_handle_back()
 
 func back_action() -> String:
-	return "exit" if page == "catalog" else ("pause" if page=="game" else "catalog")
+	return "exit" if page == "catalog" else ("pause" if page=="game" else ("details" if page=="prepare" else "catalog"))
 func _handle_back() -> void:
 	if back_action() == "exit":
 		get_tree().quit()
 	elif back_action()=="pause":
 		if is_instance_valid(active_game):
 			active_game.call("back")
+	elif back_action()=="details":
+		_details(selected)
 	else:
 		_catalog()
 

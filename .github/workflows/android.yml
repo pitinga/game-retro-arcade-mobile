@@ -1,4 +1,4 @@
-name: M2 · testes e APK Android
+name: M3 · testes e APK Android
 
 on:
   push:
@@ -81,11 +81,19 @@ jobs:
           grep -Fx 'M2 failures: 0' /tmp/test-m2.log
           if grep -E 'SCRIPT ERROR|Parse Error' /tmp/test-m2.log; then exit 1; fi
 
+      - name: Testar M3
+        run: |
+          set -o pipefail
+          timeout 90s godot --headless --path . --script res://tests/test_m3.gd 2>&1 | tee /tmp/test-m3.log
+          grep -Fx 'M3 failures: 0' /tmp/test-m3.log
+          grep -Fx 'RALLY AGENT SUMMARY 12/12' /tmp/test-m3.log
+          if grep -E 'SCRIPT ERROR|Parse Error' /tmp/test-m3.log; then exit 1; fi
+
       - name: G10 reference player
         run: |
           set -o pipefail
           timeout 90s godot --headless --path . --script res://tests/g10_reference_agent.gd 2>&1 | tee /tmp/g10-agent.log
-          grep -Fq 'AGENT SUMMARY attempted=36' /tmp/g10-agent.log
+          grep -Fx 'AGENT SUMMARY attempted=36 cleared=36 structures_lost=0' /tmp/g10-agent.log
           if grep -E 'SCRIPT ERROR|Parse Error' /tmp/g10-agent.log; then exit 1; fi
 
       - name: Capturas reais do shell (desktop Linux virtual)
@@ -93,8 +101,9 @@ jobs:
           mkdir -p build/screenshots
           timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_shell.gd
           timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_m2.gd
-          test "$(find build/screenshots -name 'G*-*.png' | wc -l)" -eq 12
-          test "$(find build/screenshots -name '*.png' | wc -l)" -eq 24
+          timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_m3.gd
+          test "$(find build/screenshots -name 'G*-*.png' | wc -l)" -eq 20
+          test "$(find build/screenshots -name '*.png' | wc -l)" -eq 32
           for f in build/screenshots/*.png; do
             echo "SCREENSHOT:$(basename "$f"):$(base64 -w0 "$f")"
           done
