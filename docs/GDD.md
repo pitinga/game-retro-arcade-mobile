@@ -11,16 +11,16 @@ Uma coletânea de 10 arcades 2D independentes, inspirados em gêneros populariza
 ## 3. Catálogo e contrato comercial
 | ID | Nome de trabalho (não liberado comercialmente) | Referência histórica interna | Acesso | Orientação |
 |---|---|---|---|---|
-| G01 river-shooter | Canyon Wings | River Raid (1982) | FREE | retrato |
-| G02 endurance-racing | Horizon Rally | Enduro (1983) | FREE | retrato |
-| G03 brick-breaker | Prism Break | Breakout (1978, 2600) | FREE | retrato |
-| G04 submarine-rescue | Abyss Rescue | Seaquest (1983) | PRO | paisagem |
-| G05 ice-platformer | Polar Workshop | Frostbite (1983) | PRO | paisagem |
-| G06 cave-rescue | Deep Signal | H.E.R.O. (1984) | PRO | paisagem |
-| G07 mall-chase | Skyport Chase | Keystone Kapers (1983) | PRO | paisagem |
-| G08 jungle-adventure | Emerald Expedition | Pitfall! (1982) | PRO | paisagem |
-| G09 asteroid-shooter | Orbit Shards | Asteroids (1981, 2600) | PRO | paisagem |
-| G10 missile-defense | Aurora Shield | Missile Command (1981, 2600) | PRO | paisagem |
+| G01 river-shooter | RIVER RΛID | River Raid (1982) | FREE | retrato |
+| G02 endurance-racing | ENDURØ | Enduro (1983) | FREE | retrato |
+| G03 brick-breaker | BREΛKØUT | Breakout (1978, 2600) | FREE | retrato |
+| G04 submarine-rescue | SEΛQUEST | Seaquest (1983) | PRO | paisagem |
+| G05 ice-platformer | FRØSTBITE | Frostbite (1983) | PRO | paisagem |
+| G06 cave-rescue | H.E.R.Ø. | H.E.R.O. (1984) | PRO | paisagem |
+| G07 mall-chase | KEYSTØNE KΛPERS | Keystone Kapers (1983) | PRO | paisagem |
+| G08 jungle-adventure | PITFΛLL! | Pitfall! (1982) | PRO | paisagem |
+| G09 asteroid-shooter | ΛSTERØIDS | Asteroids (1981, 2600) | PRO | paisagem |
+| G10 missile-defense | MISSILE CØMMΛND | Missile Command (1981, 2600) | PRO | paisagem |
 
 P01 MUST: FREE tem exatamente G01–G03 completos, sem limites artificiais; os dez aparecem no catálogo com sete cadeados, descrição e botão de upgrade. PRO libera os dez e elimina todos os anúncios, inclusive banners, rewarded e inicialização de SDK publicitário quando viável. Nenhuma vantagem de pontuação/continues paga; mesmas regras e dificuldades. Compra única não consumível; um app com entitlement, não duas bases de código. Preço e SKU definitivos a decidir antes de publicar. Sem compra dentro de jogo ativo.
 P02 MUST: anúncios intersticiais apenas após resultado ou retorno ao catálogo, após pelo menos 3 partidas concluídas desde a última exibição e 180 s desde a última impressão; no máximo um anúncio por transição; nenhum no primeiro jogo, tutorial, pausa, abertura, compra ou erro. Não bloquear navegação por falta de conexão/fill/consentimento; falha deve liberar imediatamente. Sem banners no campo, sem rewarded no MVP. Contar impressões apenas quando exibidas. Ao obter PRO, cancelar fila e nunca chamar show.
@@ -81,3 +81,7 @@ Decisões abertas: preço, marca final, idioma extra, suporte iOS de lançamento
 
 ### Review M2 — ajustes de UI e QA
 Pausa 56×48u, margem superior/direita 8u; em paisagem sobreposição de 8u na borda superior do campo, toque nessa área reservado ao botão e nunca ao jogo. 48dp em aparelho permanece validação física. Controles ajustam altura dentro da faixa, mínimo 48u. QA: APK debug com tag qa_arcade e OS.is_debug_build() abre módulos PRO apenas para validação; sem alteração de entitlement nem recordes PRO. Template release nega o caminho; criar preset release sem tag antes de M7.
+
+
+### Nomes de exibição
+A coluna de nomes do catálogo registra a seleção visual de 24/11/2026; ver [DISPLAY-NAMES.md](DISPLAY-NAMES.md). Os títulos de trabalho nos documentos técnicos e referências históricas continuam como rastreabilidade. A seleção não equivale a autorização de marca nem libera distribuição pública; nomes semelhantes podem induzir associação. Gate jurídico obrigatório antes do release.

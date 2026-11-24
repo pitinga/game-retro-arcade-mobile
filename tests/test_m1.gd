@@ -32,10 +32,15 @@ func check(ok: bool, name: String) -> void:
 func _initialize() -> void:
 	call_deferred("run")
 func run() -> void:
+	var expected_names: Dictionary={"G01":"RIVER RΛID","G02":"ENDURØ","G03":"BREΛKØUT","G04":"SEΛQUEST","G05":"FRØSTBITE","G06":"H.E.R.Ø.","G07":"KEYSTØNE KΛPERS","G08":"PITFΛLL!","G09":"ΛSTERØIDS","G10":"MISSILE CØMMΛND"}
+	var ui_font: Font=ThemeDB.fallback_font
+	check(ui_font.has_char(0x039B) and ui_font.has_char(0x00D8),"DISPLAY Greek lambda and slashed O glyphs")
 	var free: int = 0
 	var ids: Dictionary = {}
 	for item: Dictionary in Catalog.ITEMS:
 		check(not ids.has(item.id),"R01 unique id")
+		check(item.name==expected_names.get(item.id),"DISPLAY approved title "+str(item.id))
+		check(ui_font.get_string_size(String(item.name),HORIZONTAL_ALIGNMENT_LEFT,-1,18).x<280,"DISPLAY HUD title width "+str(item.id))
 		ids[item.id] = true
 		free += int(item.free)
 		check(Catalog.can_access(item.id,false)==item.free,"R01 FREE")

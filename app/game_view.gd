@@ -1,4 +1,5 @@
 extends Control
+const Catalog=preload("res://core/catalog.gd")
 const Host=preload("res://core/session_host.gd")
 const Layout=preload("res://core/layout.gd")
 const Session=preload("res://core/session.gd")
@@ -18,6 +19,7 @@ const WHITE:=Color("#F5F7FF")
 const MINT:=Color("#63E6C4")
 const GOLD:=Color("#FFD166")
 var game_id: String
+var display_name: String
 var difficulty: String
 var language: String="pt"
 var left_handed: bool=false
@@ -38,6 +40,7 @@ signal restart_requested
 signal completed(result: Dictionary)
 func configure(id: String,level: String,locale: String="pt",prefs: Dictionary={},seed_value: int=0) -> void:
 	game_id=id
+	display_name=str(Catalog.find(id).get("name",""))
 	difficulty=level
 	language=locale
 	left_handed=bool(prefs.get("left_handed",false))
@@ -270,7 +273,7 @@ func _control(rect: Rect2,label: String) -> void:
 	draw_rect(rect.grow(-3),Color(0.51,0.58,0.69,control_opacity),false,2)
 	_txt(rect.position+Vector2(12,rect.size.y/2+5),label,14)
 func _draw_brick() -> void:
-	_txt(Vector2(12,23),"PRISM BREAK",18,MINT)
+	_txt(Vector2(12,23),display_name,18,MINT)
 	_txt(Vector2(12,46),"%06d  F%02d  %s %d"%[model.score,model.phase,t("VIDAS","LIVES"),model.lives],14)
 	draw_rect(Rect2(0,64,360,464),Color("#151B35"))
 	var shift:=Vector2(0,64)
@@ -295,7 +298,7 @@ func _draw_brick() -> void:
 	if model.serving:
 		_txt(Vector2(112,330),t("PRONTO?","READY?"),22,MINT)
 func _draw_orbit() -> void:
-	_txt(Vector2(12,19),"ORBIT SHARDS",17,MINT)
+	_txt(Vector2(12,19),display_name,17,MINT)
 	_txt(Vector2(12,39),"%06d  %s %d   %s %d   DASH %.1f"%[model.score,t("ONDA","WAVE"),model.wave,t("VIDAS","LIVES"),model.lives,model.dash_cd],14)
 	draw_rect(Rect2(0,48,640,248),Color("#11152D"))
 	for idx in range(35):
@@ -325,7 +328,7 @@ func _draw_orbit() -> void:
 	# Mask any wrapped copies crossing the field boundary, then repaint HUD.
 	draw_rect(Rect2(0,0,640,48),BG)
 	draw_rect(Rect2(0,296,640,64),BG)
-	_txt(Vector2(12,19),"ORBIT SHARDS",17,MINT)
+	_txt(Vector2(12,19),display_name,17,MINT)
 	_txt(Vector2(12,39),"%06d  %s %d   %s %d   DASH %.1f"%[model.score,t("ONDA","WAVE"),model.wave,t("VIDAS","LIVES"),model.lives,model.dash_cd],14)
 	for key: String in host.touch_regions:
 		var label: String={"left":"<","right":">","up":t("PROPULSÃO","THRUST"),"fire":t("TIRO","FIRE"),"secondary":"DASH"}[key]
@@ -341,7 +344,7 @@ func _polygon_rock(point: Vector2,r: float,c: Color,id: int) -> void:
 	draw_line(point,verts[1],Color("#30365D"),2)
 	draw_line(point,verts[3],Color("#30365D"),2)
 func _draw_shield() -> void:
-	_txt(Vector2(12,19),"AURORA SHIELD",17,MINT)
+	_txt(Vector2(12,19),display_name,17,MINT)
 	_txt(Vector2(12,39),"%06d  %s %d  %s %d/5  A:%d B:%d"%[model.score,t("ONDA","WAVE"),model.wave,t("BASES","BASES"),model.habitats.count(true),model.ammo[0],model.ammo[1]],14)
 	draw_rect(Rect2(0,48,640,312),Color("#18243D"))
 	var shift:=Vector2(0,48)
@@ -378,7 +381,7 @@ func _draw_shield() -> void:
 		_txt(Vector2(245,175),t("PRÓXIMA ONDA","NEXT WAVE"),20,GOLD)
 
 func _draw_river() -> void:
-	_txt(Vector2(12,23),"CANYON WINGS",18,MINT)
+	_txt(Vector2(12,23),display_name,18,MINT)
 	_txt(Vector2(12,46),"%06d  S%02d  %s %d"%[model.score,model.sector,t("VIDAS","LIVES"),model.lives],14)
 	draw_rect(Rect2(0,64,360,464),Color("#BF946A"))
 	var left:=PackedVector2Array([Vector2(0,64)])
@@ -434,7 +437,7 @@ func road_point(z: float,lateral: float) -> Vector2:
 	var center:=180+float(model.curve(model.distance+z))*120*depth
 	return Vector2(center+lateral*half,64+130+depth*315)
 func _draw_rally() -> void:
-	_txt(Vector2(12,22),"HORIZON RALLY",18,MINT)
+	_txt(Vector2(12,22),display_name,18,MINT)
 	_txt(Vector2(12,45),"D%02d  %02d/%02d  %03d km/h"%[model.day,model.passes,model.goal,int(model.speed*3.6)],14)
 	var sky: Color=[Color("#5FA9C7"),Color("#BC7774"),Color("#202A49"),Color("#C5A08C")][model.phase()]
 	var land: Color=Color("#0B1711") if model.phase()!=2 else Color("#081210")
@@ -490,7 +493,7 @@ func _draw_rally() -> void:
 			_control(host.touch_regions[key],label)
 
 func _draw_abyss() -> void:
-	_txt(Vector2(12,19),"ABYSS RESCUE",17,MINT)
+	_txt(Vector2(12,19),display_name,17,MINT)
 	_txt(Vector2(12,39),"%06d  O2 %d%%  %s %d  %s %d/%d  %s %d"%[model.score,int(model.oxygen),t("VIDAS","LIVES"),model.lives,t("CARGA","CARGO"),model.cargo,model.capacity(),t("ONDA","WAVE"),model.wave],14)
 	draw_rect(Rect2(0,48,640,248),Color("#163E59"))
 	draw_rect(Rect2(0,48,640,0.10*Abyss.H),Color("#D5F4F5"))
@@ -522,7 +525,7 @@ func _draw_abyss() -> void:
 	for key: String in host.touch_regions:
 		_control(host.touch_regions[key],t("DIREÇÃO","STEER") if key=="stick" else t("PULSO","PULSE"))
 func _draw_polar() -> void:
-	_txt(Vector2(12,19),"POLAR WORKSHOP",17,MINT)
+	_txt(Vector2(12,19),display_name,17,MINT)
 	_txt(Vector2(12,39),"%06d  %s %d%%  %s %d/3  F%d  %s %d"%[model.score,t("ENERGIA","ENERGY"),int(model.energy),t("EST","STN"),model.repaired.count(true),model.phase,t("VIDAS","LIVES"),model.lives],14)
 	draw_rect(Rect2(0,48,640,248),Color("#203E6E"))
 	var shift:=Vector2(0,48)
@@ -569,7 +572,7 @@ func _draw_polar() -> void:
 		_control(host.touch_regions[key],label)
 
 func _draw_skyport() -> void:
-	_txt(Vector2(12,19),"SKYPORT CHASE",17,MINT)
+	_txt(Vector2(12,19),display_name,17,MINT)
 	_txt(Vector2(12,39),"%06d  %s %02ds  %s %d  R%d  %s %d/2  DASH %.1f"%[model.score,t("TEMPO","TIME"),int(ceil(model.remaining)),t("VIDAS","LIVES"),model.lives,model.round,t("BLOQ","LOCK"),model.active_count,model.dash_cd],14)
 	var shift:=Vector2(0,48)
 	draw_rect(Rect2(0,48,640,248),Color("#344A61"))
@@ -637,7 +640,7 @@ func _draw_skyport() -> void:
 		_control(host.touch_regions[key],label)
 
 func _draw_deep() -> void:
-	_txt(Vector2(12,19),"DEEP SIGNAL",17,MINT)
+	_txt(Vector2(12,19),display_name,17,MINT)
 	_txt(Vector2(12,39),"%06d  %s %d%%  %s %d  F%02d/20  %s %d"%[model.score,t("ENERGIA","ENERGY"),int(model.energy),t("CORTES","CUTS"),model.charges,model.level,t("VIDAS","LIVES"),model.lives],14)
 	var shift:=Vector2(8,48)
 	draw_rect(Rect2(0,48,640,248),Color("#17283C"))
@@ -698,7 +701,7 @@ func _draw_deep() -> void:
 		var label: String={"left":"<","right":">","fire":"JET","action":t("PULSO","PULSE"),"secondary":t("CORTE","CUT")}[key]
 		_control(host.touch_regions[key],label)
 func _draw_emerald() -> void:
-	_txt(Vector2(12,19),"EMERALD EXPEDITION",17,MINT)
+	_txt(Vector2(12,19),display_name,17,MINT)
 	_txt(Vector2(12,39),"%06d  %s %d/4  %s %d/3  %s %d  %s %ds"%[model.score,t("ARTEFATOS","ARTIFACTS"),model.count_region(),t("REG","REG"),model.region,t("VIDAS","LIVES"),model.lives,t("BÔNUS","BONUS"),int(ceil(model.bonus))],13)
 	var shift:=Vector2(0,48)
 	draw_rect(Rect2(0,48,640,248),Color("#163A39"))
