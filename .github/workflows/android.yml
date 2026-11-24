@@ -68,7 +68,7 @@ jobs:
           GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
           mkdir -p build
-          godot --headless --path . --export-debug Android build/retro-arcade-debug.apk
+          godot --headless --path . --install-android-build-template --export-debug Android build/retro-arcade-debug.apk
           test -s build/retro-arcade-debug.apk
 
       - name: Verificar identidade e arquitetura do APK único
