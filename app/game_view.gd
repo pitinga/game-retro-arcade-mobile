@@ -2,6 +2,8 @@ extends Control
 const Host=preload("res://core/session_host.gd")
 const Layout=preload("res://core/layout.gd")
 const Session=preload("res://core/session.gd")
+const River=preload("res://games/river-shooter/model.gd")
+const Rally=preload("res://games/endurance-racing/model.gd")
 const Brick=preload("res://games/brick-breaker/model.gd")
 const Orbit=preload("res://games/asteroid-shooter/model.gd")
 const Shield=preload("res://games/missile-defense/model.gd")
@@ -45,6 +47,8 @@ func _ready() -> void:
 	texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST
 	theme=ThemeFactory.build()
 	match game_id:
+		"G01": model=River.new()
+		"G02": model=Rally.new()
 		"G03": model=Brick.new()
 		"G09": model=Orbit.new()
 		"G10": model=Shield.new()
@@ -76,6 +80,10 @@ func _layout() -> void:
 	fitted=Layout.fit(safe,landscape)
 	var controls: Dictionary={}
 	match game_id:
+		"G01":
+			controls={"paddle":Rect2(0,64,360,464),"fire":Rect2(0,528,180,112),"up":Rect2(180,528,180,56),"down":Rect2(180,584,180,56)}
+		"G02":
+			controls={"paddle":Rect2(0,64,360,464),"up":Rect2(0,528,180,56),"down":Rect2(180,528,180,56),"left":Rect2(0,584,100,56),"right":Rect2(100,584,100,56),"secondary":Rect2(200,584,160,56)}
 		"G03":
 			controls={"paddle":Rect2(0,64,360,520),"fire":Rect2(0,584,360,56)}
 		"G09":
@@ -135,7 +143,11 @@ func _show_intro() -> void:
 	host.pause_game()
 	overlay_kind="intro"
 	var message:=t("Arraste a raquete. Toque SERVIR.","Drag the paddle. Tap SERVE.")
-	if game_id=="G09":
+	if game_id=="G01":
+		message=t("Arraste para pilotar. Colete energia e dispare.","Drag to steer. Collect energy and fire.")
+	elif game_id=="G02":
+		message=t("Acelere, desvie e alcance a meta do dia. AUTO alterna aceleração.","Accelerate, steer and meet the daily goal. AUTO toggles acceleration.")
+	elif game_id=="G09":
 		message=t("Gire, acelere, dispare e use DASH.","Rotate, thrust, shoot and DASH.")
 	elif game_id=="G10":
 		message=t("Toque no campo para interceptar os detritos.","Tap the field to intercept debris.")
@@ -189,7 +201,11 @@ func _draw() -> void:
 	var w: float=640 if landscape else 360
 	var h: float=360 if landscape else 640
 	draw_rect(Rect2(0,0,w,h),BG)
-	if game_id=="G03":
+	if game_id=="G01":
+		_draw_river()
+	elif game_id=="G02":
+		_draw_rally()
+	elif game_id=="G03":
 		_draw_brick()
 	elif game_id=="G09":
 		_draw_orbit()
@@ -309,3 +325,106 @@ func _draw_shield() -> void:
 	draw_line(aim-Vector2(0,6),aim+Vector2(0,6),MINT,1)
 	if model.wave_wait>=0:
 		_txt(Vector2(245,175),t("PRÓXIMA ONDA","NEXT WAVE"),20,GOLD)
+
+func _draw_river() -> void:
+	_txt(Vector2(12,23),"CANYON WINGS",18,MINT)
+	_txt(Vector2(12,46),"%06d  S%02d  %s %d"%[model.score,model.sector,t("VIDAS","LIVES"),model.lives],14)
+	draw_rect(Rect2(0,64,360,464),Color("#BF946A"))
+	var left:=PackedVector2Array([Vector2(0,64)])
+	var right:=PackedVector2Array([Vector2(360,64)])
+	for sy in range(0,465,8):
+		var lane: Vector2=model.corridor(model.distance+River.Y-float(sy))
+		left.append(Vector2(lane.x-lane.y/2,64+sy))
+		right.append(Vector2(lane.x+lane.y/2,64+sy))
+	left.append(Vector2(0,528))
+	right.append(Vector2(360,528))
+	draw_rect(Rect2(0,64,360,464),Color("#184C79"))
+	draw_colored_polygon(left,Color("#E2B48B"))
+	draw_colored_polygon(right,Color("#E2B48B"))
+	for i in range(1,left.size()-2):
+		draw_line(left[i],left[i+1],Color("#76523D"),2)
+		draw_line(right[i],right[i+1],Color("#76523D"),2)
+	for item: Dictionary in model.objects:
+		if model.consumed.has(item.id):
+			continue
+		var sy: float=model.screen_y(item.z)
+		if sy<14 or sy>450:
+			continue
+		var p:=Vector2(item.get("draw_x",item.x),sy+64)
+		if item.kind=="energy":
+			draw_rect(Rect2(p-Vector2(10,11),Vector2(20,22)),MINT)
+			draw_rect(Rect2(p-Vector2(10,11),Vector2(20,22)),WHITE,false,2)
+			_txt(p+Vector2(-5,5),"+",16,BG)
+		elif item.kind=="beacon":
+			draw_colored_polygon(PackedVector2Array([p+Vector2(0,-12),p+Vector2(10,0),p+Vector2(0,12),p+Vector2(-10,0)]),GOLD)
+		else:
+			draw_colored_polygon(PackedVector2Array([p+Vector2(-12,-8),p+Vector2(12,-8),p+Vector2(7,9),p+Vector2(-7,9)]),Color("#F9A69E"))
+			draw_rect(Rect2(p-Vector2(4,3),Vector2(8,6)),BG)
+	for shot: Dictionary in model.shots:
+		var p: Vector2=shot.pos+Vector2(0,64)
+		draw_line(p,p+Vector2(0,8),WHITE,2)
+	for shot: Dictionary in model.hostile:
+		draw_circle(Vector2(shot.pos)+Vector2(0,64),4,Color("#FF9B72"))
+	var plane:=Vector2(model.x,River.Y+64)
+	draw_colored_polygon(PackedVector2Array([plane+Vector2(0,-15),plane+Vector2(15,10),plane+Vector2(0,5),plane+Vector2(-15,10)]),WHITE)
+	draw_line(plane+Vector2(0,-8),plane+Vector2(0,7),MINT,3)
+	if model.immune>0:
+		draw_arc(plane,19,0,TAU,24,MINT,2)
+	draw_rect(Rect2(12,70,112,14),BG)
+	draw_rect(Rect2(14,72,108*float(model.energy)/100,10),GOLD if model.energy<=25 else MINT)
+	_txt(Vector2(130,83),t("ENERGIA ","ENERGY ")+str(int(model.energy))+"%",13)
+	for key: String in host.touch_regions:
+		if key!="paddle":
+			var label: String={"fire":t("TIRO","FIRE"),"up":t("ACELERAR","BOOST"),"down":t("FREAR","BRAKE")}[key]
+			_control(host.touch_regions[key],label)
+func road_point(z: float,lateral: float) -> Vector2:
+	var depth:=clampf(1.0-z/150.0,0,1)
+	var half:=lerpf(15,172,depth)
+	var center:=180+float(model.curve(model.distance+z))*120*depth
+	return Vector2(center+lateral*half,64+130+depth*315)
+func _draw_rally() -> void:
+	_txt(Vector2(12,22),"HORIZON RALLY",18,MINT)
+	_txt(Vector2(12,45),"D%02d  %02d/%02d  %03d km/h"%[model.day,model.passes,model.goal,int(model.speed*3.6)],14)
+	var sky: Color=[Color("#5FA9C7"),Color("#BC7774"),Color("#202A49"),Color("#C5A08C")][model.phase()]
+	var land: Color=Color("#405A54") if model.phase()!=2 else Color("#172D31")
+	draw_rect(Rect2(0,64,360,130),sky)
+	draw_rect(Rect2(0,194,360,334),land)
+	for i in range(30):
+		var far_z:=150-float(i)*5
+		var near_z:=far_z-5
+		var quad:=PackedVector2Array([road_point(far_z,-1),road_point(far_z,1),road_point(near_z,1),road_point(near_z,-1)])
+		draw_colored_polygon(quad,Color("#3F4B61") if i%2==0 else Color("#46536B"))
+		for line: float in [-1.0,1.0]:
+			draw_line(road_point(far_z,line),road_point(near_z,line),WHITE,2)
+		if int((model.distance+near_z)/8)%2==0:
+			for line: float in [-0.33,0.33]:
+				draw_line(road_point(far_z,line),road_point(near_z,line),Color("#B5C3D8"),1)
+	var ordered: Array=model.rivals.duplicate()
+	ordered.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return a.z>b.z)
+	for car: Dictionary in ordered:
+		if car.z<0 or car.z>150:
+			continue
+		var p:=road_point(car.z,model.lanes[car.lane])
+		var depth:=clampf(1-float(car.z)/150,0,1)
+		var r:=Vector2(lerpf(7,26,depth),lerpf(5,24,depth))
+		draw_rect(Rect2(p-r/2,r),Color("#F0B680"))
+		draw_rect(Rect2(p-r/2,r),BG,false,1)
+		draw_rect(Rect2(p-r/2+Vector2(2,r.y-4),Vector2(3,3)),Color("#FF4E70"))
+		draw_rect(Rect2(p+r/2-Vector2(5,4),Vector2(3,3)),Color("#FF4E70"))
+	var player:=road_point(0,model.lateral)
+	draw_rect(Rect2(player-Vector2(20,13),Vector2(40,26)),MINT)
+	draw_rect(Rect2(player-Vector2(12,10),Vector2(24,9)),BG)
+	draw_rect(Rect2(8,70,214,48),BG)
+	_txt(Vector2(14,88),"%s %02ds  HP %d"%[t("TEMPO","TIME"),int(ceil(90-model.elapsed)),model.integrity],14)
+	_txt(Vector2(14,108),t("FAIXA LIVRE: ","CLEAR LANE: ")+str(model.safe_lane+1),13,GOLD)
+	if model.fog:
+		draw_rect(Rect2(0,194,360,315),Color(0.75,0.85,0.9,0.19))
+		_txt(Vector2(230,88),t("NEBLINA","FOG"),14,GOLD)
+	elif model.ice:
+		_txt(Vector2(230,88),t("GELO","ICE"),14,GOLD)
+	if model.countdown>0:
+		_txt(Vector2(164,300),str(int(ceil(model.countdown))),32,WHITE)
+	for key: String in host.touch_regions:
+		if key!="paddle":
+			var label: String={"up":t("ACELERAR","ACCEL"),"down":t("FREAR","BRAKE"),"left":"<","right":">","secondary":"AUTO "+("ON" if model.auto_accel else "OFF")}[key]
+			_control(host.touch_regions[key],label)

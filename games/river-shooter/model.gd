@@ -28,6 +28,7 @@ var objects: Array[Dictionary]=[]
 var shots: Array[Dictionary]=[]
 var hostile: Array[Dictionary]=[]
 var consumed: Dictionary={}
+var rewarded: Dictionary={}
 func create(rng: RandomNumberGenerator,level: String) -> void:
 	difficulty=["easy","normal","hard"].find(level)
 	score=0
@@ -45,6 +46,7 @@ func generate_sector(rng: RandomNumberGenerator,start_center: float) -> void:
 		widths.append(rng.randf_range(0.46,0.60)*W)
 	objects.clear()
 	consumed.clear()
+	rewarded.clear()
 	# Energy on continuous center route; enemies offset from center, never block it.
 	var id: int=0
 	var z: float=0.65*H
@@ -96,7 +98,9 @@ func collect(o: Dictionary) -> void:
 	consumed[o.id]=true
 	if o.kind=="energy":
 		energy=minf(100,energy+38)
-		points(20)
+		if not rewarded.has(o.id):
+			rewarded[o.id]=true
+			points(20)
 	elif o.kind=="beacon" and route==0:
 		route=int(o.side)
 		points(60 if route<0 else 90)
@@ -105,7 +109,10 @@ func lose() -> Dictionary:
 	damage=true
 	if lives<=0:
 		return {"score":score,"progress":sector,"reason":"lost"}
-	# Same sector checkpoint, preserve consumed reward IDs, clear projectiles.
+	# Same sector checkpoint, restore cells without awarding their points twice.
+	for o: Dictionary in objects:
+		if o.kind=="energy":
+			consumed.erase(o.id)
 	distance=0
 	elapsed=0
 	x=centers[0]
