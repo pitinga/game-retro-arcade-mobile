@@ -14,6 +14,7 @@ wget -q "${base}/SHA512-SUMS.txt" -O "${workdir}/SHA512-SUMS.txt"
 (
   cd "$workdir"
   grep -F " ${archive}" SHA512-SUMS.txt | sha512sum -c -
+  sha512sum "$archive"
   unzip -q "$archive"
 )
 cmp "${workdir}/Godot_v${version}_linux.x86_64" "$(command -v godot)"

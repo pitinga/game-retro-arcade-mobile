@@ -30,7 +30,8 @@ func advance_game(delta: float) -> void:
 	if session.state != Session.State.RUNNING:
 		return
 	session.set_input(router.snapshot())
-	session.advance(delta)
+	if session.advance(delta) > 0:
+		router.consume_edges()
 	if session.state == Session.State.RESULT:
 		router.clear()
 		finished.emit(session.get_result())
@@ -38,7 +39,7 @@ func _process(delta: float) -> void:
 	advance_game(delta)
 func route_touch(pointer: int, point: Vector2, pressed: bool, canceled: bool = false) -> void:
 	if not pressed or canceled:
-		router.release(pointer)
+		router.release(pointer,canceled)
 		return
 	if session.state != Session.State.RUNNING:
 		return
@@ -48,11 +49,21 @@ func route_touch(pointer: int, point: Vector2, pressed: bool, canceled: bool = f
 	for action: String in touch_regions:
 		var area: Rect2 = touch_regions[action]
 		if area.has_point(logical):
-			router.press(pointer,action)
+			router.press(pointer,action,logical)
 			return
+func route_drag(pointer: int, point: Vector2) -> void:
+	if session.state != Session.State.RUNNING or fitted.scale <= 0.0:
+		return
+	var rect: Rect2 = fitted.rect
+	# Captured drag stays owned even outside the original region; clamp to field.
+	var local := (point-rect.position)/float(fitted.scale)
+	var bounds := rect.size/float(fitted.scale)
+	router.drag(pointer,local.clamp(Vector2.ZERO,bounds))
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		route_touch(event.index,event.position,event.pressed,event.canceled)
+	elif event is InputEventScreenDrag:
+		route_drag(event.index,event.position)
 	elif event is InputEventKey and not event.echo:
 		if event.keycode == KEY_ESCAPE and event.pressed:
 			pause_game()

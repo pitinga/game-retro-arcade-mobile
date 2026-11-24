@@ -8,6 +8,14 @@ const Layout = preload("res://core/layout.gd")
 const Host = preload("res://core/session_host.gd")
 const Geometry = preload("res://core/geometry.gd")
 var failures: int = 0
+class CommerceFixture extends "res://core/commerce.gd":
+	func simulated_status(status: String) -> void:
+		match status:
+			"purchased": _entitlement = Entitlement.PRO
+			"free_confirmed":
+				if _entitlement != Entitlement.PRO:
+					_entitlement = Entitlement.FREE
+			"revoked_confirmed": _entitlement = Entitlement.FREE
 class Fixture extends RefCounted:
 	var count: int = 0
 	var value: int = 0
@@ -33,13 +41,13 @@ func run() -> void:
 		check(Catalog.can_access(item.id,false)==item.free,"R01 FREE")
 		check(Catalog.can_access(item.id,true),"R01 PRO")
 	check(ids.size()==10 and free==3 and not Catalog.can_access("fake",true),"R01 count/access")
-	var c := Commerce.new()
+	var c := CommerceFixture.new()
 	c.begin(0)
 	check(c.can_access("G01") and not c.can_access("G04"),"R03 unknown")
 	check(not c.show_ad() and c.request_purchase()=="unavailable","R04 no live commerce")
-	c.apply_verified_result("purchased",false)
+	check(not c.has_method("apply_verified_result"),"M1-003 no grant API")
 	check(not c.can_access("G04"),"R03 untrusted")
-	c.apply_verified_result("free_confirmed",true)
+	c.simulated_status("free_confirmed")
 	c.consent = true
 	for id: String in ["1","2","3","3"]:
 		c.record_completed(id)
@@ -47,11 +55,11 @@ func run() -> void:
 	check(not c.eligible("3",180000,false,true),"R02 context")
 	check(c.reserve_opportunity("3",180000,true,true),"R02 eligible")
 	check(not c.reserve_opportunity("3",180000,true,true),"R02 idempotent")
-	c.apply_verified_result("purchased",true)
-	check(c.can_access("G10") and not c.confirm_impression("3",180000),"R02 PRO race")
-	c.apply_verified_result("free_confirmed",true)
-	check(c.can_access("G10"),"R03 negative not revoke")
-	c.apply_verified_result("revoked_confirmed",true)
+	c.simulated_status("purchased")
+	check(c.entitlement==Commerce.Entitlement.PRO and not c.can_access("G10") and not c.confirm_impression("3",180000),"R02 PRO race")
+	c.simulated_status("free_confirmed")
+	check(c.entitlement==Commerce.Entitlement.PRO,"R03 negative not revoke")
+	c.simulated_status("revoked_confirmed")
 	check(not c.can_access("G10"),"R03 confirmed revocation")
 	var router := InputRouter.new()
 	router.press(0,"left")
@@ -85,7 +93,8 @@ func run() -> void:
 	check(host.configure(Fixture.new(),7,"normal") and host.start(),"R08 host")
 	host.configure_layout(Rect2(0,0,360,640),false,{"fire":Rect2(200,528,160,112)})
 	host.route_touch(4,Vector2(300,600),true)
-	check(host.router.snapshot().has("fire"),"R08 touch route")
+	host.route_drag(4,Vector2(120,590))
+	check(host.router.snapshot().has("fire") and host.router.snapshot().analog.fire.delta==Vector2(-180,-10),"M1-002 captured drag")
 	host.route_touch(4,Vector2(300,600),true,true)
 	check(host.router.snapshot().is_empty(),"R08 touch cancel")
 	host.route_touch(5,Vector2(300,600),true)
@@ -114,18 +123,19 @@ func run() -> void:
 		bad.close()
 	var recovered := Storage.new(path)
 	recovered.load_data()
-	check(recovered.prefs.language=="en","R09 backup recovery")
-	for suffix: String in ["",".tmp",".bak"]:
+	check(recovered.prefs.language=="en" and recovered.records.get("G01:normal:1",0)==10,"M1-005 latest record recovery")
+	check(not Storage.valid_key("FAKE:normal:1") and not Storage.valid_key("G03:bad:1") and not Storage.valid_key("G03:normal:a/b"),"M1-005 key validation")
+	for suffix: String in ["",".tmp",".bak",".bak.tmp"]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path+suffix))
 	var scene := load("res://app/main.tscn") as PackedScene
 	var app := scene.instantiate()
 	root.add_child(app)
 	await process_frame
-	check(app.page=="catalog","R05 boot")
+	check(app.page=="catalog" and app.back_action()=="exit","M1-001 catalog back")
 	app._details("G04")
 	check(app.page=="details" and not app.commerce.can_access("G04"),"R01 locked details")
 	app._settings()
-	check(app.page=="settings","R05 settings")
+	check(app.page=="settings" and app.back_action()=="catalog","M1-001 settings back")
 	app.queue_free()
 	await process_frame
 	print("M1 failures: ",failures)

@@ -3,7 +3,10 @@ extends RefCounted
 enum Entitlement { UNKNOWN, FREE, PRO }
 const SALES_ENABLED: bool = false
 const ADS_ENABLED: bool = false
-var entitlement: Entitlement = Entitlement.UNKNOWN
+var _entitlement: Entitlement = Entitlement.UNKNOWN
+var entitlement: Entitlement:
+	get:
+		return _entitlement
 var pending: bool = false
 var consent: bool = false
 var completed_since_impression: int = 0
@@ -14,27 +17,10 @@ var _offered: Dictionary = {}
 
 func begin(now_ms: int) -> void:
 	started_ms = now_ms
-func apply_verified_result(status: String, trustworthy: bool) -> void:
-	# Only an authenticated store adapter may call with trustworthy=true in M7.
-	if not trustworthy:
-		return
-	match status:
-		"purchased":
-			entitlement = Entitlement.PRO
-			pending = false
-		"free_confirmed":
-			if entitlement != Entitlement.PRO:
-				entitlement = Entitlement.FREE
-			pending = false
-		"revoked_confirmed":
-			entitlement = Entitlement.FREE
-			pending = false
-		"pending":
-			pending = true
-		"cancelled":
-			pending = false
+# No grant API is shipped. M7 must implement authenticated receipt verification
+# and replace this disabled gate; tests alone exercise policy states.
 func can_access(id: String) -> bool:
-	return preload("res://core/catalog.gd").can_access(id, entitlement == Entitlement.PRO)
+	return preload("res://core/catalog.gd").can_access(id, SALES_ENABLED and entitlement == Entitlement.PRO)
 func record_completed(result_id: String) -> void:
 	if result_id.is_empty() or _seen_results.has(result_id):
 		return

@@ -18,6 +18,7 @@ const BORDER := Color("#8295b0")
 const GOLD := Color("#ffd166")
 
 func _ready() -> void:
+	theme = preload("res://app/arcade_theme.gd").build()
 	storage.load_data()
 	commerce.begin(Time.get_ticks_msec())
 	get_viewport().size_changed.connect(_fit_safe)
@@ -200,10 +201,18 @@ func _toggle_language() -> void:
 	_settings()
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_GO_BACK_REQUEST and page != "catalog":
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		_handle_back()
+
+func back_action() -> String:
+	return "exit" if page == "catalog" else "catalog"
+func _handle_back() -> void:
+	if back_action() == "exit":
+		get_tree().quit()
+	else:
 		_catalog()
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and page != "catalog":
-		_catalog()
+	if event.is_action_pressed("ui_cancel"):
+		_handle_back()
 		get_viewport().set_input_as_handled()

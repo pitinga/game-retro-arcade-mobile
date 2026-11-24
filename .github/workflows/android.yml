@@ -9,10 +9,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: retro-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   android:
     name: Godot 4.7.2 · Foundation
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -23,6 +28,10 @@ jobs:
             echo '::error::Workflows públicos não podem publicar builds ou usar chaves de assinatura de produção.'
             exit 1
           fi
+
+      - name: Impedir concessão de entitlement no código de produção
+        run: |
+          if grep -REn 'apply_verified_result|_entitlement[[:space:]]*=' app core --include='*.gd' | grep -v 'var _entitlement:'; then exit 1; fi
 
       - name: Java 17 (compatibilidade com Godot Android)
         uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
@@ -77,4 +86,4 @@ jobs:
           "$aapt" dump badging build/retro-arcade-debug.apk | grep -q "^package: name='com.pitinga.retroarcademobile' "
           "$aapt" dump badging build/retro-arcade-debug.apk | grep -Fq "native-code: 'arm64-v8a'"
           # Nenhum SDK de cobrança/publicidade nesta milestone.
-          ! "$aapt" dump permissions build/retro-arcade-debug.apk | grep -F 'com.android.vending.BILLING'
+          if "$aapt" dump permissions build/retro-arcade-debug.apk | grep -E 'com.android.vending.BILLING|android.permission.INTERNET'; then exit 1; fi

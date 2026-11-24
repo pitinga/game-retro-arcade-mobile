@@ -13,3 +13,5 @@ Não constitui aprovação jurídica. Antes de arte final de G01/G05/G07/G08: re
 | G09 | Asteroids | cristais, mineração, dash, design original | inércia e fragmentação |
 | G10 | Missile Command | habitats polares, dois lançadores, reparos e escudos próprios | interceptação |
 Fontes: links históricos em GDD-GAMES; não afirmar verificação de cada URL nem observação quadro a quadro. Antes de arte final, registrar fontes verificadas, três observações abstratas e revisão visual/jurídica por ID. M1 não contém jogo ou asset final.
+
+M1-006: gate de similaridade para todos os dez jogos; análise jurídica proporcional ao risco, nenhuma aprovação. Registros G02/G03/G04/G06/G09/G10 adicionados; três cenários observados continuam pendentes quando não efetivamente observados. M2 usa geometria original provisória, sem assets finais.

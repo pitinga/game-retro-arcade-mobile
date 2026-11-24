@@ -30,31 +30,42 @@ func load_data() -> void:
 		if r is Dictionary:
 			for key: Variant in r:
 				var value: Variant = r[key]
-				if key is String and (value is float or value is int) and is_finite(float(value)) and value >= 0 and value <= 9007199254740991 and floor(float(value)) == float(value):
+				if key is String and valid_key(key) and records.size() < 300 and (value is float or value is int) and is_finite(float(value)) and value >= 0 and value <= 9007199254740991 and floor(float(value)) == float(value):
 					records[key] = int(value)
 		return
-func save() -> bool:
-	var tmp := path+".tmp"
+static func valid_key(key: String) -> bool:
+	var parts := key.split(":")
+	if key.length() > 80 or parts.size() != 3 or preload("res://core/catalog.gd").find(parts[0]).is_empty() or not parts[1] in ["easy","normal","hard"] or parts[2].is_empty():
+		return false
+	for code: int in parts[2].to_ascii_buffer():
+		if not ((code >= 48 and code <= 57) or (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or code in [45,46,95]):
+			return false
+	return true
+func _write_atomic(target: String, payload: String) -> bool:
+	var tmp := target+".tmp"
 	var file := FileAccess.open(tmp,FileAccess.WRITE)
 	if file == null:
 		return false
-	file.store_string(JSON.stringify({"schema":SCHEMA,"prefs":prefs,"records":records}))
+	file.store_string(payload)
 	file.flush()
 	file.close()
-	var dest := ProjectSettings.globalize_path(path)
-	var temp := ProjectSettings.globalize_path(tmp)
-	var bak := dest+".bak"
-	if FileAccess.file_exists(path):
-		# Keep a last-known-good backup, never overwrite it with corrupted primary.
-		var old: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-		if old is Dictionary and old.get("schema",0) == SCHEMA:
-			if DirAccess.copy_absolute(dest,bak) != OK:
-				return false
-	return DirAccess.rename_absolute(temp,dest) == OK
+	if FileAccess.get_file_as_string(tmp) != payload:
+		return false
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(tmp),ProjectSettings.globalize_path(target)) == OK
+func save() -> bool:
+	var payload := JSON.stringify({"schema":SCHEMA,"prefs":prefs,"records":records})
+	# Primary commit is authoritative. Mirror newest committed data into backup atomically.
+	if not _write_atomic(path,payload):
+		return false
+	if not _write_atomic(path+".bak",payload):
+		push_warning("Backup refresh failed; primary committed successfully.")
+	return true
 func record(id: String, difficulty: String, rules: String, score: int) -> bool:
-	if preload("res://core/catalog.gd").find(id).is_empty() or not difficulty in ["easy","normal","hard"] or rules.is_empty() or ":" in rules or score < 0 or score > 9007199254740991:
+	if not valid_key(id+":"+difficulty+":"+rules) or score < 0 or score > 9007199254740991:
 		return false
 	var key := id+":"+difficulty+":"+rules
+	if not records.has(key) and records.size() >= 300:
+		return false
 	var previous: int = records.get(key,0)
 	if score <= previous:
 		return true
