@@ -2,6 +2,7 @@ extends Control
 const Host=preload("res://core/session_host.gd")
 const Layout=preload("res://core/layout.gd")
 const Session=preload("res://core/session.gd")
+const Skyport=preload("res://games/terminal-chase/model.gd")
 const Abyss=preload("res://games/submarine-rescue/model.gd")
 const Polar=preload("res://games/ice-platformer/model.gd")
 const River=preload("res://games/river-shooter/model.gd")
@@ -39,7 +40,7 @@ func configure(id: String,level: String,locale: String="pt",prefs: Dictionary={}
 	language=locale
 	left_handed=bool(prefs.get("left_handed",false))
 	control_opacity=clampf(float(prefs.get("control_opacity",100))/100.0,0.5,1.0)
-	landscape=id in ["G04","G05","G09","G10"]
+	landscape=id in ["G04","G05","G07","G09","G10"]
 	run_seed=seed_value if seed_value!=0 else Time.get_ticks_usec()
 	best_score=int(prefs.get("best_score",0))
 	control_size=clampf(float(prefs.get("control_size",100))/100.0,0.5,1.5)
@@ -54,6 +55,7 @@ func _ready() -> void:
 		"G03": model=Brick.new()
 		"G04": model=Abyss.new()
 		"G05": model=Polar.new()
+		"G07": model=Skyport.new()
 		"G09": model=Orbit.new()
 		"G10": model=Shield.new()
 		_: return
@@ -98,6 +100,10 @@ func _layout() -> void:
 			controls={"stick":Rect2(0,296,256,64),"fire":Rect2(368,296,136,64),"action":Rect2(504,296,136,64)}
 			if left_handed:
 				controls={"stick":Rect2(384,296,256,64),"fire":Rect2(0,296,136,64),"action":Rect2(136,296,136,64)}
+		"G07":
+			controls={"stick":Rect2(0,296,280,64),"action":Rect2(360,296,140,64),"secondary":Rect2(500,296,140,64)}
+			if left_handed:
+				controls={"stick":Rect2(360,296,280,64),"action":Rect2(0,296,140,64),"secondary":Rect2(140,296,140,64)}
 		"G09":
 			if left_handed:
 				controls={"left":Rect2(392,296,62,64),"right":Rect2(454,296,62,64),"up":Rect2(516,296,124,64),"fire":Rect2(0,296,120,64),"secondary":Rect2(120,296,120,64)}
@@ -163,6 +169,8 @@ func _show_intro() -> void:
 		message=t("Resgate cápsulas e pare na superfície para entregar e recarregar O2.","Rescue pods and stop at the surface to deliver and refill O2.")
 	elif game_id=="G05":
 		message=t("Escolha a direção, SALTE e segure REPARAR em três estações.","Choose direction, JUMP and hold REPAIR at three stations.")
+	elif game_id=="G07":
+		message=t("Ative dois bloqueadores e intercepte o robô antes da fuga.","Activate two blockers, then intercept the robot before escape.")
 	elif game_id=="G09":
 		message=t("Gire, acelere, dispare e use DASH.","Rotate, thrust, shoot and DASH.")
 	elif game_id=="G10":
@@ -227,6 +235,8 @@ func _draw() -> void:
 		_draw_abyss()
 	elif game_id=="G05":
 		_draw_polar()
+	elif game_id=="G07":
+		_draw_skyport()
 	elif game_id=="G09":
 		_draw_orbit()
 	elif game_id=="G10":
@@ -535,4 +545,59 @@ func _draw_polar() -> void:
 	draw_rect(Rect2(p-Vector2(4,6),Vector2(8,8)),MINT)
 	for key: String in host.touch_regions:
 		var label: String={"stick":t("DIREÇÃO","STEER"),"fire":t("SALTO","JUMP"),"action":t("REPARAR","REPAIR")}[key]
+		_control(host.touch_regions[key],label)
+
+func _draw_skyport() -> void:
+	_txt(Vector2(12,19),"SKYPORT CHASE",17,MINT)
+	_txt(Vector2(12,39),"%06d  %s %02ds  %s %d  R%d  %s %d/2  DASH %.1f"%[model.score,t("TEMPO","TIME"),int(ceil(model.remaining)),t("VIDAS","LIVES"),model.lives,model.round,t("BLOQ","LOCK"),model.active_count,model.dash_cd],14)
+	var shift:=Vector2(0,48)
+	draw_rect(Rect2(0,48,640,248),Color("#344A61"))
+	for wall: Rect2 in model.walls:
+		var box:=Rect2(wall.position+shift,wall.size)
+		draw_rect(box,Color("#17243B"))
+		draw_rect(box,Color("#8295B0"),false,2)
+		draw_line(box.position+Vector2(5,7),box.position+Vector2(box.size.x-5,7),Color("#506680"),2)
+	for area: Rect2 in model.maintenance:
+		var box:=Rect2(area.position+shift,area.size)
+		draw_rect(box,Color("#634A36"))
+		for i in range(0,int(area.size.x),14):
+			draw_line(box.position+Vector2(i,3),box.position+Vector2(i,box.size.y-3),GOLD,2)
+		draw_rect(box,GOLD,false,2)
+	var conveyor:=Rect2(65,151,130,42)
+	draw_rect(conveyor,Color("#294C50"))
+	for i in range(5):
+		_txt(conveyor.position+Vector2(8+i*24,26),">" if fposmod(model.time,8)<4 else "<",18,MINT)
+	var door: Rect2=model.door_rect()
+	door.position+=shift
+	draw_rect(door,GOLD if model.door_warning else (Color("#F08A99") if model.door_closed else MINT),model.door_closed,2)
+	for i in range(3):
+		var p: Vector2=model.node(model.ZONES[i])+shift
+		draw_circle(p,22,BG)
+		draw_arc(p,22,0,TAU,24,MINT if model.activated[i] else GOLD,3)
+		_txt(p+Vector2(-13,4),"OK" if model.activated[i] else "B"+str(i+1),13,WHITE)
+		if model.progress_zone==i:
+			draw_arc(p,25,-PI/2,-PI/2+TAU*model.progress/0.6,24,MINT,3)
+	for id: int in model.EXITS:
+		var p: Vector2=model.node(id)+shift
+		var open: bool=id==model.exit_id and model.remaining<=10
+		var warn: bool=id==model.exit_id and model.remaining<=15
+		draw_rect(Rect2(p-Vector2(18,12),Vector2(36,24)),BG)
+		draw_rect(Rect2(p-Vector2(18,12),Vector2(36,24)),GOLD if warn else WHITE,false,2)
+		_txt(p+Vector2(-12,4),"OUT" if open else ("!" if warn else "X"),12,WHITE)
+	for d: Dictionary in model.drones:
+		var p: Vector2=d.pos+shift
+		draw_colored_polygon(PackedVector2Array([p+Vector2(-9,0),p+Vector2(0,-10),p+Vector2(9,0),p+Vector2(0,10)]),Color("#FF9B72"))
+		draw_arc(p,13,0,TAU,20,GOLD,1)
+	var target: Vector2=model.robot+shift
+	draw_rect(Rect2(target-Vector2(13,11),Vector2(26,22)),Color("#C4A4FF"))
+	draw_rect(Rect2(target-Vector2(13,11),Vector2(26,22)),WHITE,false,2)
+	draw_rect(Rect2(target-Vector2(6,4),Vector2(12,8)),BG)
+	var p: Vector2=model.player+shift
+	draw_circle(p,11,BG)
+	draw_arc(p,11,0,TAU,24,MINT,3)
+	draw_line(p,p+Vector2(model.last_axis)*12,WHITE,2)
+	if model.contact_hint>0:
+		_txt(Vector2(200,70),t("ATIVE DOIS BLOQUEADORES","ACTIVATE TWO BLOCKERS"),14,GOLD)
+	for key: String in host.touch_regions:
+		var label: String={"stick":t("DIREÇÃO","STEER"),"action":t("INTERAGIR","INTERACT"),"secondary":"DASH"}[key]
 		_control(host.touch_regions[key],label)
