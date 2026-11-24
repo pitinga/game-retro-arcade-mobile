@@ -68,6 +68,7 @@ jobs:
         run: |
           mkdir -p build/screenshots
           xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_shell.gd
+          xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_m2.gd
           for f in build/screenshots/*.png; do
             echo "SCREENSHOT:$(basename "$f"):$(base64 -w0 "$f")"
           done
