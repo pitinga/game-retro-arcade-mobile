@@ -1,5 +1,5 @@
 # Protocolo de revisão — Retro Arcade Mobile
-Versão 0.1.0 · 2026-11-24 · [GDD geral](GDD.md) · [GDD dos jogos](GDD-GAMES.md) · [Visual](VISUAL-CONCEPTS.md)
+Versão 0.2.0 · 2026-11-24 · [GDD geral](GDD.md) · [GDD dos jogos](GDD-GAMES.md) · [Visual](VISUAL-CONCEPTS.md)
 Este documento é destinado ao revisor independente. A baseline documentada é proposta, não implementação. Nenhum teste executado nesta etapa. Não assumir conformidade por existência de arquivos ou claims do programador.
 
 ## 1. Procedimento
@@ -99,4 +99,4 @@ Medir build de release ou equivalente sem devtools pesados, aparelho e SO inform
 ```
 
 ## 7. Estado inicial
-Todos requisitos estão PENDENTES de implementação e validação. Nenhum teste de jogo, ROM, asset final ou build existe por força destes documentos. Próximo passo: revisar baseline, escolher stack/ADR, implementar shell + engine + G03 como vertical slice antes de expandir.
+Requisitos de M2–M7 permanecem PENDENTES; M1 deve ser avaliado pelo SHA do PR e evidências. Nenhum teste de jogo, ROM ou asset final é produzido por estes documentos. Próximo passo: revisar baseline, escolher stack/ADR, implementar shell + engine + G03 como vertical slice antes de expandir.
