@@ -1,0 +1,80 @@
+name: M1 · testes e APK Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Godot 4.7.2 · Foundation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Impedir distribuição pública de builds
+        run: |
+          if grep -REn 'uses: *actions/[u]pload-artifact@|secrets\.PLAY_UPLOAD_|gh release (create|upload)' .github/workflows; then
+            echo '::error::Workflows públicos não podem publicar builds ou usar chaves de assinatura de produção.'
+            exit 1
+          fi
+
+      - name: Java 17 (compatibilidade com Godot Android)
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+
+      - name: Pacotes Android necessários
+        run: sdkmanager 'platform-tools' 'build-tools;36.1.0' 'platforms;android-36' 'cmdline-tools;latest'
+
+      - name: Godot 4.7.2 e export templates
+        uses: chickensoft-games/setup-godot@ac93246ea68518a384c1c280a496e5989341f2f6 # v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+
+      - name: Validar SHA-512 e versão do Godot
+        run: bash .github/scripts/verify-godot.sh
+
+      - name: Importar projeto
+        run: godot --headless --path . --editor --import --quit
+
+      - name: Testar foundation
+        run: godot --headless --path . --script res://tests/test_m1.gd
+
+      - name: Configurar exportador Android do Godot
+        shell: bash
+        run: |
+          settings_file=$(find "$HOME/.config/godot" -maxdepth 1 -type f -name 'editor_settings-4*.tres' -print -quit)
+          test -n "$settings_file"
+          printf '\nexport/android/android_sdk_path = "%s"\n' "$ANDROID_SDK_ROOT" >> "$settings_file"
+          printf 'export/android/java_sdk_path = "%s"\n' "$JAVA_HOME" >> "$settings_file"
+          keytool -genkeypair -keystore "$RUNNER_TEMP/retro-debug.keystore" -storepass android -keypass android -alias androiddebugkey -keyalg RSA -validity 10000 -dname 'CN=Android Debug,O=Android,C=US'
+
+      - name: Gerar APK único de teste (ARM64)
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ runner.temp }}/retro-debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-debug Android build/retro-arcade-debug.apk
+          test -s build/retro-arcade-debug.apk
+
+      - name: Verificar identidade e arquitetura do APK único
+        run: |
+          aapt="$ANDROID_SDK_ROOT/build-tools/36.1.0/aapt"
+          "$aapt" dump badging build/retro-arcade-debug.apk | grep -q "^package: name='com.pitinga.retroarcademobile' "
+          "$aapt" dump badging build/retro-arcade-debug.apk | grep -Fq "native-code: 'arm64-v8a'"
+          # Nenhum SDK de cobrança/publicidade nesta milestone.
+          ! "$aapt" dump permissions build/retro-arcade-debug.apk | grep -F 'com.android.vending.BILLING'
