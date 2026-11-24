@@ -2,6 +2,8 @@ extends Control
 const Host=preload("res://core/session_host.gd")
 const Layout=preload("res://core/layout.gd")
 const Session=preload("res://core/session.gd")
+const Abyss=preload("res://games/submarine-rescue/model.gd")
+const Polar=preload("res://games/ice-platformer/model.gd")
 const River=preload("res://games/river-shooter/model.gd")
 const Rally=preload("res://games/endurance-racing/model.gd")
 const Brick=preload("res://games/brick-breaker/model.gd")
@@ -37,7 +39,7 @@ func configure(id: String,level: String,locale: String="pt",prefs: Dictionary={}
 	language=locale
 	left_handed=bool(prefs.get("left_handed",false))
 	control_opacity=clampf(float(prefs.get("control_opacity",100))/100.0,0.5,1.0)
-	landscape=id in ["G09","G10"]
+	landscape=id in ["G04","G05","G09","G10"]
 	run_seed=seed_value if seed_value!=0 else Time.get_ticks_usec()
 	best_score=int(prefs.get("best_score",0))
 	control_size=clampf(float(prefs.get("control_size",100))/100.0,0.5,1.5)
@@ -50,6 +52,8 @@ func _ready() -> void:
 		"G01": model=River.new()
 		"G02": model=Rally.new()
 		"G03": model=Brick.new()
+		"G04": model=Abyss.new()
+		"G05": model=Polar.new()
 		"G09": model=Orbit.new()
 		"G10": model=Shield.new()
 		_: return
@@ -86,6 +90,14 @@ func _layout() -> void:
 			controls={"paddle":Rect2(0,64,360,464),"up":Rect2(0,528,180,56),"down":Rect2(180,528,180,56),"left":Rect2(0,584,100,56),"right":Rect2(100,584,100,56),"secondary":Rect2(200,584,160,56)}
 		"G03":
 			controls={"paddle":Rect2(0,64,360,520),"fire":Rect2(0,584,360,56)}
+		"G04":
+			controls={"stick":Rect2(0,296,280,64),"fire":Rect2(400,296,240,64)}
+			if left_handed:
+				controls={"stick":Rect2(360,296,280,64),"fire":Rect2(0,296,240,64)}
+		"G05":
+			controls={"left":Rect2(0,296,64,64),"up":Rect2(64,296,64,64),"down":Rect2(128,296,64,64),"right":Rect2(192,296,64,64),"fire":Rect2(368,296,136,64),"action":Rect2(504,296,136,64)}
+			if left_handed:
+				controls={"left":Rect2(384,296,64,64),"up":Rect2(448,296,64,64),"down":Rect2(512,296,64,64),"right":Rect2(576,296,64,64),"fire":Rect2(0,296,136,64),"action":Rect2(136,296,136,64)}
 		"G09":
 			if left_handed:
 				controls={"left":Rect2(392,296,62,64),"right":Rect2(454,296,62,64),"up":Rect2(516,296,124,64),"fire":Rect2(0,296,120,64),"secondary":Rect2(120,296,120,64)}
@@ -95,7 +107,7 @@ func _layout() -> void:
 			controls={"aim":Rect2(0,48,640,278)}
 	# Size preference adjusts button height inside reserved bands, never below 48u.
 	for action: String in controls:
-		if action in ["aim","paddle"]:
+		if action in ["aim","paddle","stick"]:
 			continue
 		var area: Rect2=controls[action]
 		var target_size:=Vector2(clampf(area.size.x*control_size/1.5,48.0,area.size.x),clampf(area.size.y*control_size/1.5,48.0,area.size.y))
@@ -147,6 +159,10 @@ func _show_intro() -> void:
 		message=t("Arraste para pilotar. Colete energia e dispare.","Drag to steer. Collect energy and fire.")
 	elif game_id=="G02":
 		message=t("Acelere, desvie e alcance a meta do dia. AUTO alterna aceleração.","Accelerate, steer and meet the daily goal. AUTO toggles acceleration.")
+	elif game_id=="G04":
+		message=t("Resgate cápsulas e pare na superfície para entregar e recarregar O2.","Rescue pods and stop at the surface to deliver and refill O2.")
+	elif game_id=="G05":
+		message=t("Escolha a direção, SALTE e segure REPARAR em três estações.","Choose direction, JUMP and hold REPAIR at three stations.")
 	elif game_id=="G09":
 		message=t("Gire, acelere, dispare e use DASH.","Rotate, thrust, shoot and DASH.")
 	elif game_id=="G10":
@@ -207,6 +223,10 @@ func _draw() -> void:
 		_draw_rally()
 	elif game_id=="G03":
 		_draw_brick()
+	elif game_id=="G04":
+		_draw_abyss()
+	elif game_id=="G05":
+		_draw_polar()
 	elif game_id=="G09":
 		_draw_orbit()
 	elif game_id=="G10":
@@ -435,3 +455,74 @@ func _draw_rally() -> void:
 		if key!="paddle":
 			var label: String={"up":t("ACELERAR","ACCEL"),"down":t("FREAR","BRAKE"),"left":"<","right":">","secondary":"AUTO "+("ON" if model.auto_accel else "OFF")}[key]
 			_control(host.touch_regions[key],label)
+
+func _draw_abyss() -> void:
+	_txt(Vector2(12,19),"ABYSS RESCUE",17,MINT)
+	_txt(Vector2(12,39),"%06d  O2 %d%%  %s %d  %s %d/%d  %s %d"%[model.score,int(model.oxygen),t("VIDAS","LIVES"),model.lives,t("CARGA","CARGO"),model.cargo,model.capacity(),t("ONDA","WAVE"),model.wave],14)
+	draw_rect(Rect2(0,48,640,248),Color("#163E59"))
+	draw_rect(Rect2(0,48,640,0.10*Abyss.H),Color("#D5F4F5"))
+	draw_rect(Rect2(0,48+0.95*Abyss.H,640,0.05*Abyss.H),Color("#D5AA78"))
+	for i in range(15):
+		var x: float=float((i*113+50)%640)
+		draw_line(Vector2(x,292),Vector2(x+8,276-float(i%3)*4),Color("#64A6A0"),3)
+	var shift:=Vector2(0,48)
+	for c: Dictionary in model.capsules:
+		var p: Vector2=c.pos+shift
+		draw_circle(p,10,Color("#F8C36A"))
+		draw_arc(p,10,0,TAU,20,WHITE,2)
+		draw_rect(Rect2(p-Vector2(4,4),Vector2(8,8)),BG)
+	for e: Dictionary in model.enemies:
+		var p: Vector2=e.pos+shift
+		draw_colored_polygon(PackedVector2Array([p+Vector2(-13,0),p+Vector2(0,-9),p+Vector2(13,0),p+Vector2(0,9)]),Color("#F28D9B"))
+		draw_circle(p,3,BG)
+	for shot: Dictionary in model.shots:
+		var p: Vector2=shot.pos+shift
+		draw_line(p,p+Vector2(-8*signf(shot.vx),0),WHITE,3)
+	var p: Vector2=model.pos+shift
+	draw_rect(Rect2(p-Vector2(17,8),Vector2(34,16)),MINT)
+	draw_rect(Rect2(p+Vector2(-5,-14),Vector2(10,6)),MINT)
+	draw_circle(p+Vector2(model.direction*8,0),5,BG)
+	if model.immune>0:
+		draw_arc(p,21,0,TAU,24,WHITE,1)
+	if model.wave_wait>0:
+		_txt(Vector2(245,180),t("NOVA ONDA","NEXT WAVE"),22,GOLD)
+	for key: String in host.touch_regions:
+		_control(host.touch_regions[key],t("DIREÇÃO","STEER") if key=="stick" else t("PULSO","PULSE"))
+func _draw_polar() -> void:
+	_txt(Vector2(12,19),"POLAR WORKSHOP",17,MINT)
+	_txt(Vector2(12,39),"%06d  %s %d%%  %s %d/3  F%d  %s %d"%[model.score,t("ENERGIA","ENERGY"),int(model.energy),t("EST","STN"),model.repaired.count(true),model.phase,t("VIDAS","LIVES"),model.lives],14)
+	draw_rect(Rect2(0,48,640,248),Color("#203E6E"))
+	var shift:=Vector2(0,48)
+	for station: Vector2 in model.stations:
+		var points:=PackedVector2Array()
+		for i in range(49):
+			var angle:=float(i)*TAU/48
+			points.append(station+shift+Vector2(cos(angle)*83,sin(angle)*56))
+		draw_polyline(points,Color("#8295B0"),1)
+	for platform: Dictionary in model.platforms:
+		var p: Vector2=platform.pos+shift
+		draw_rect(Rect2(p-Vector2(22,13),Vector2(44,26)),Color("#E3F1F5"))
+		draw_rect(Rect2(p-Vector2(22,13),Vector2(44,26)),Color("#15243D"),false,2)
+	for i in range(3):
+		var p: Vector2=model.stations[i]+shift
+		draw_circle(p,31,Color("#E3F1F5"))
+		draw_arc(p,31,0,TAU,32,Color("#15243D"),3)
+		draw_rect(Rect2(p-Vector2(13,12),Vector2(26,24)),MINT if model.repaired[i] else GOLD)
+		_txt(p+Vector2(-5,5),str(i+1),16,BG)
+		if model.repair_index==i:
+			draw_arc(p,35,-PI/2,-PI/2+TAU*model.repair_time,24,MINT,3)
+	for drone: Dictionary in model.drones:
+		var p: Vector2=drone.pos+shift
+		draw_circle(p,9,Color("#FF9B72"))
+		draw_arc(p,10,0,TAU,16,WHITE,2)
+	var p: Vector2=model.pos+shift
+	if model.jump_left<=0:
+		var target: Vector2=model.target_in_direction()+shift
+		draw_line(p,target,WHITE,1)
+		draw_arc(target,7,0,TAU,16,GOLD,2)
+	draw_circle(p,10,Color("#15243D"))
+	draw_arc(p,10,0,TAU,20,WHITE,2)
+	draw_rect(Rect2(p-Vector2(4,6),Vector2(8,8)),MINT)
+	for key: String in host.touch_regions:
+		var label: String={"left":"<","right":">","up":"^","down":"v","fire":t("SALTO","JUMP"),"action":t("REPARAR","REPAIR")}[key]
+		_control(host.touch_regions[key],label)

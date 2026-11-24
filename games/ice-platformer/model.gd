@@ -57,6 +57,25 @@ func update_platforms(dt: float) -> void:
 	for p: Dictionary in platforms:
 		p.angle=fposmod(float(p.angle)+angular*dt,TAU)
 		p.pos=stations[p.station]+Vector2(cos(p.angle)*83,sin(p.angle)*56)
+# Directional jump assistance predicts moving platforms at landing time.
+func target_in_direction() -> Vector2:
+	var best:=pos+direction*0.20*W
+	var best_distance: float=INF
+	var angular:=float([0.12,0.17,0.22][difficulty])*W/75
+	var candidates: Array[Vector2]=stations.duplicate()
+	for platform: Dictionary in platforms:
+		var angle:=float(platform.angle)+angular*JUMP
+		candidates.append(stations[platform.station]+Vector2(cos(angle)*83,sin(angle)*56))
+	for candidate: Vector2 in candidates:
+		var delta:=candidate-pos
+		var distance:=delta.length()
+		if distance<30 or distance>0.20*W or delta.normalized().dot(direction)<0.78:
+			continue
+		var cost:=absf(0.20*W-distance)+(1-delta.normalized().dot(direction))*100
+		if cost<best_distance:
+			best_distance=cost
+			best=candidate
+	return best.clamp(Vector2(R,R),Vector2(W-R,H-R))
 func station_at(point: Vector2) -> int:
 	for i in range(3):
 		if stations[i].distance_to(point)<=31:
@@ -93,8 +112,7 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 			pos=platforms[support].pos
 		if buffer>0:
 			jump_from=pos
-			var length: float=0.20*W
-			jump_to=(pos+direction*length).clamp(Vector2(R,R),Vector2(W-R,H-R))
+			jump_to=target_in_direction()
 			if phase>=2:
 				jump_to.x=clampf(jump_to.x+sin(time)*8,R,W-R)
 			jump_left=JUMP
