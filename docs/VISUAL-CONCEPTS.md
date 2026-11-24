@@ -1,9 +1,9 @@
 # Retro Arcade — Resumo visual e esboços
-**Versão 0.1.0 · 2026-11-24 · Wireframes conceituais, não screenshots nem arte final.**
+**Versão 0.2.0 · 2026-11-24 · Wireframes conceituais, não screenshots nem arte final.**
 [GDD geral](GDD.md) | [Regras dos jogos](GDD-GAMES.md) | [Checklist](REVIEW-CHECKLIST.md)
 
 ## Direção geral
-Arcade contemporâneo com pixel art de alta legibilidade; nostalgia na linguagem gráfica, não na cópia da composição dos originais. Menu fundo #101522, cards #202A3C, texto #F5F7FF, acento menta #63E6C4, PRO dourado #FFD166. Tipografia pixel nos títulos e números grandes; sans na descrição/controles. Cantos 12–16 dp no shell; gameplay com contornos nítidos, planos de fundo menos contrastados que objetos interativos. Sem moldura de televisão obrigatória, sem scanlines agressivas. Safe areas e alvos touch conforme GDD. As caixas abaixo são esboços textuais originais: a escala é ilustrativa, controles não ocupam área jogável útil; HUD real localizado. Os nomes são provisórios e dependem de clearance de marca. Os números de HUD ilustram estado, não especificação de balanceamento.
+Arcade contemporâneo com pixel art de alta legibilidade; nostalgia na linguagem gráfica, não na cópia da composição dos originais. Menu fundo #101522, cards #202A3C, texto #F5F7FF, acento menta #63E6C4, PRO dourado #FFD166. Tipografia pixel nos títulos e números grandes; sans na descrição/controles. Cantos 12–16 dp no shell; gameplay com contornos nítidos, planos de fundo menos contrastados que objetos interativos. Borda de card #8295B0 (>=3:1 contra fundo/superfície); elementos interativos com contorno contrastante >=3:1 contra fundo imediato, decoração não confundível com colisão. G02 carro próprio com seta e rivais com silhuetas distintas; G08 contorno #E6D4B2 em bordas navegáveis. Sem moldura de televisão obrigatória, sem scanlines agressivas. Safe areas e alvos touch conforme GDD. As caixas abaixo são esboços textuais originais: a escala é ilustrativa, controles não ocupam área jogável útil; HUD real localizado. Os nomes são provisórios e dependem de clearance de marca. Os números de HUD ilustram estado, não especificação de balanceamento.
 
 ## Catálogo / tela inicial (retrato)
 ```text
@@ -36,8 +36,8 @@ Cards com thumbnail própria, nome legível, cadeado somente bloqueados, scroll 
 │ Energia ███████░  ⏸ │
 ├──────────────────────┤
 │ ▲ rocha  ~~~~  rocha │
-│ ██╲    ╔════╗    ╱██ │
-│ ███╲   ╚    ╝   ╱███ │
+│ ██╲    ◈    ◈    ╱██ │
+│ ███╲  rota A/B  ╱███ │
 │ ████│    ◇     │████ │
 │ ███╱ ~   ↑   ~ ╲████ │
 │ ██╱     [E]     ╲███ │
@@ -49,7 +49,7 @@ Cards com thumbnail própria, nome legível, cadeado somente bloqueados, scroll 
 │ [− FREIO] [+ BOOST]  │
 └──────────────────────┘
 ```
-Paleta: água #184C79, margem #B77E55, vegetação #3D7862, aeronave #E9F2FF, energia #7EF4DA, perigo #FF865A. Cânion visto de cima, forma sinuosa com ilhas e luz diagonal; portões futuristas translúcidos com borda e setas, não pontes copiadas. Aeronave branca/teal, drones losangulares laranja, células com ícone E e halo. Esteira aquática e partículas discretas, indicação de rota segura. Arte: tiles de rocha/água, três drones, portão, células, aeronave em inclinação, projéteis e HUD.
+Paleta: água #184C79, margem #E2B48B, vegetação #3D7862, aeronave #E9F2FF, energia #7EF4DA, perigo #FF865A. Cânion visto de cima, forma sinuosa com ilhas e luz diagonal; faróis de rota com ícone e setas, sem ponte ou portão transversal. Aeronave branca/teal, drones losangulares laranja, células com ícone E e halo. Esteira aquática e partículas discretas, indicação de rota segura. Arte: tiles de rocha/água, três drones, farol, células, aeronave em inclinação, projéteis e HUD.
 
 ## G02 — Horizon Rally · FREE · retrato
 ```text
@@ -113,19 +113,14 @@ Paleta: superfície #86D3E7, água #123A63→#081D38, veículo #F6C85D, cápsula
 ## G05 — Polar Workshop · PRO · paisagem
 ```text
 ┌────────────────────────────────────────────┐
-│ FASE 2   MÓDULOS 5/8   TEMP ██████░░   ⏸  │
-├────────────────────────────────────────────┤
-│ BASE ╔══[■■■□□]══╗  antena     neve       │
-│ ~~~ [▧▧] → ~~~ [▧▧] → ~~~ [▧▧] ~~~~~~~~ │
-│ ~~ [▧▧] ← ~~  [◆◆] ← ~~ [▧▧] ~~~~~~~~~~ │
-│ ~~~~ [▧▧] → ~~ ROBÔ ↑ ~~~~ [▧▧] → ~~~~~~ │
-│ ~~ [▧▧] ← ~~~~ [▧▧] ← ~~ [◆◆] ~~~~~~~~~ │
-│ ~~~~~ [▧▧] → ~~~~~~ [▧▧] → ~~~~~~~~~~~~ │
-├────────────────────────────────────────────┤
-│ [ ← ↑ ↓ → ]                        [SALTO]│
+│ FASE 2    ESTAÇÕES 1/3   ENERGIA ███░   ⏸ │
+│     [A✓]    ◯ plataformas       [B]       │
+│        ◯       ROBÔ↑       ◯              │
+│    ~~~     [C]       ◯     ~~~            │
+│ [ D-PAD ]          [SALTO] [REPARAR]      │
 └────────────────────────────────────────────┘
 ```
-Paleta: neve #E3F1F5, gelo #8BD1F0, água #203E6E, módulo #F5B95F, robô #F5E8CC, perigo #BE647D. Estação modular no topo, placas com padrão de circuito e setas de direção, robô de manutenção original. Placa ativa possui símbolo e contorno diferentes; queda distingue água de gelo. Arte: base em estados 0–100%, plataformas 3 tipos, robô pulando, rajada, drone, indicador termal.
+Três anéis de plataformas, três estações distintas, sem cinco faixas nem retorno à base. Neve #E3F1F5, água #203E6E, robô #F5E8CC, estações #F5B95F, gelo #8BD1F0; contorno #15243D de 1–2 pixels lógicos em todos interativos, inclusive plataformas/robô/estações, contra neve e água usar contorno duplo claro #F5F7FF onde necessário. Validar >=3:1 em cada fundo real, símbolos de reparo e perigo. 
 
 ## G06 — Deep Signal · PRO · paisagem
 ```text
@@ -147,23 +142,20 @@ Paleta: rocha #38354D, luz #D8E0F2, energia #6BE2D2, equipamento #F4C56E, risco 
 ## G07 — Skyport Chase · PRO · paisagem
 ```text
 ┌────────────────────────────────────────────┐
-│ TEMPO 00:42   RODADA 3   ◆◆◆    MAPA   ⏸ │
-├────────────────────────────────────────────┤
-│ P4 ─────── [LIFT] ──────── [ROBO] →       │
-│ P3 ── esteira → ──────────────── ╱        │
-│ P2 ───── mala ▣ ─────── [LIFT] ╱         │
-│ P1 ── agente ▲ ─── drone ◇ ────╱         │
-│        terminal · vitrines · painéis      │
-├────────────────────────────────────────────┤
-│ [← →]               [SALTO][ABAIXAR][LIFT]│
+│ TEMPO 00:42   BLOQUEADORES 1/2   MAPA   ⏸ │
+│ ┌──────┐   [A✓] ┌─────────┐      saída   │
+│ │      └─→──────┘    ROBÔ ◇ ── [B]       │
+│ │  AGENTE ▲    [C]       esteira →       │
+│ └─────────── porta ────────────────────  │
+│ [ STICK 2D ]             [AÇÃO] [DASH]    │
 └────────────────────────────────────────────┘
 ```
-Paleta: terminal #28435C/#526B84, painéis #C0D7E6, agente #6DE1C4, alvo #FFBA67, obstáculo #E98279. Aeroporto futurista em corte lateral com pisos numerados, minimapa claro e lifts distintos. Evitar uniforme policial, ladrão, lojas e cenários originais. Esteiras com chevrons, malas e drones geométricos. Arte: agente 6 estados, robô alvo, lift/portas, rampas, obstáculos, sinalética.
+Terminal em planta top-down, corredores, cruzamentos, bloqueadores sinalizados. Sem andares/lifts/escadas. Paleta terminal #28435C, painel #C0D7E6, agente #6DE1C4, alvo #FFBA67, perigo #E98279, contornos contrastantes. Arte original agente/robô, portas, esteiras e três zonas.
 
 ## G08 — Emerald Expedition · PRO · paisagem
 ```text
 ┌────────────────────────────────────────────┐
-│ REGIÃO 2  RELÍQUIAS 2/4  02:25  ◆◆◆   ⏸ │
+│ REGIÃO 2  RELÍQUIAS 2/4  BÔNUS 02:25  ◆◆◆   ⏸ │
 ├────────────────────────────────────────────┤
 │   copa da floresta         ruína         │
 │    ╭──ponte──╮        ◇ artefato         │
@@ -213,13 +205,13 @@ Paleta: céu #18243D, aurora #4CC6A7, habitats #BDDEEA, lançadores #E7C77D, ame
 ## Matriz de assets mínimos (todos originais)
 | Jogo | Personagens/veículos | Mundo | Feedback e HUD |
 |---|---|---|---|
-| G01 | aeronave, drones | cânions, portões | energia, setor, tiros |
+| G01 | aeronave, drones | cânions, faróis | energia, setor, tiros |
 | G02 | carro + rivais | pista, céu/clima | meta, tempo, integridade |
 | G03 | paddle, bola | prismas, 30 padrões | HP, serve, power-ups |
 | G04 | veículo, drones, cápsulas | recifes, doca | O2, carga, pulso |
-| G05 | robô, drone | plataformas, estação | temperatura, módulos |
+| G05 | robô, drone | anéis de plataformas, estações | energia, estações |
 | G06 | resgatador, cientista, inimigos | 20 tilemaps próprios | energia, ferramentas |
-| G07 | agente, alvo robô | terminal, lifts | minimapa, cronômetro |
+| G07 | agente, alvo robô | terminal top-down, bloqueadores | minimapa, cronômetro |
 | G08 | cartógrafa, fauna | 24 salas próprias | artefatos, tempo |
 | G09 | nave, drone | cristais, nebulosa | dash, onda, fragmentos |
 | G10 | habitats, lançadores | planície e aurora | alvo, munição, escudo |
