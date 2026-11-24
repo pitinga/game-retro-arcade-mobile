@@ -1,0 +1,2 @@
+# Review M5 12:15 — received after initial 404
+M5-001 evasão ativa após bloqueadores, progressão; M5-002 contraste parede, símbolos !/X, padrões; M5-003 agente sem perda, ingênuo 12 cenários, três rodadas, dash/porta replay; M5-004 capturas reais de 2 bloqueadores e fixture visual de aviso, SHA após CI; M5-005 esteira ±0,12W/s, drone central; M5-006 -2s/rodada documentado; M4R-001 contraste rival e contorno; M4R-002/003 issues de cobertura de ondas profundas e solver completo. Gate exige CI verde e persistência. Aguardar revisão física e jurídica.

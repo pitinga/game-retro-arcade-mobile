@@ -109,3 +109,6 @@ AC-G10-04: 1000 seeds/ondas representativas validadas quanto à interceptabilida
 
 ### Review M4 — ajustes normativos
 G04: cápsula rasa 0,30–0,38H, inimigos >=0,56H, zona morta analógica 8u; bônus +150 exclusivamente carga cheia. G05: prazo por fase max(24,50−3×(fase−1)) s, restaura no checkpoint; fase 2+ rajada a cada 5s, aviso 1s, 2s ativa desloca aterrissagem 46u; stick direcional permite diagonais, teclado preservado. Assistência de alvo mantida, tempo e vento impõem risco. M3: morte restaura escolha de farol sem repetir bônus.
+
+### Review M5 — decisões de balanceamento
+G07: evasão após 2 bloqueadores em 50% das escolhas na rodada 1, +3,5 pontos percentuais por rodada, cap 82%; restantes sorteadas. Tempo inicial 75/65/55, redução de 2 s/rodada, pisos 40/35/30. Esteira ±0,12W/s; patrulha central a partir da rodada 2. Porta em aviso com !, fechada com X. G02: rivais mais claros e contorno escuro 2u.

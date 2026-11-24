@@ -1,0 +1,2 @@
+# Self-review M5
+Requested review file review-retro-arcade-m5-20261124-1215.md returned 404 and was absent from main/branch/history at time of query. This is NOT a substitute for independent review. Changes: contact cannot cross solids, stun blocks interaction, conveyor change warning, persistent exit announcement and stun ring; meaningful capture replay and screenshot state gate. Remaining: independent findings, 1000 live seeds, true minimap, hazard timing/physical QA, original art and legal clearance. No M5 merge until review available.
