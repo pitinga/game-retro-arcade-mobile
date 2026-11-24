@@ -3,13 +3,14 @@ extends RefCounted
 var waypoint: int=-1
 var last_round: int=-1
 var last_lives: int=-1
+var pursuit_only: bool=false
 func input_for(m: RefCounted) -> Dictionary:
 	if m.round!=last_round or m.lives!=last_lives:
 		waypoint=-1
 		last_round=m.round
 		last_lives=m.lives
 	var goal: int=-1
-	if m.active_count<2:
+	if m.active_count<2 and not pursuit_only:
 		var best: int=999
 		for i in range(3):
 			if m.activated[i]:

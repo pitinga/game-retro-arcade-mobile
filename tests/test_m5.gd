@@ -94,19 +94,56 @@ func run() -> void:
 		for wall: Rect2 in m.walls:
 			check(m.blocked(wall.get_center()),"AC-G07-03 solid")
 	var ok: int=0
+	var naive_fail: int=0
 	for seed in range(12):
 		rng.seed=seed
 		m.create(rng,["easy","normal","hard"][seed%3])
 		var agent:=Agent.new()
+		var initial_lives:=m.lives
 		for tick in range(4800):
 			var result:=m.step(agent.input_for(m),1.0/60,rng)
 			if m.round>1 or not result.is_empty():
 				break
-		if m.round>1:
+		if m.round>1 and m.lives==initial_lives:
 			ok+=1
 		print("SKYPORT AGENT seed=",seed," round=",m.round," lives=",m.lives)
+			rng.seed=seed
+		m.create(rng,["easy","normal","hard"][seed%3])
+		initial_lives=m.lives
+		var naive:=Agent.new()
+		naive.pursuit_only=true
+		for tick in range(4800):
+			var result:=m.step(naive.input_for(m),1.0/60,rng)
+			if m.lives<initial_lives or not result.is_empty():
+				break
+		if m.lives<initial_lives and m.round==1 and m.score==0:
+			naive_fail+=1
 	print("SKYPORT AGENT SUMMARY ",ok,"/12")
+	print("SKYPORT NAIVE SUMMARY ",naive_fail,"/12")
+	check(naive_fail==12,"M5-003 naive pursuit must lose life")
 	check(ok==12,"AC-G07-02 representative live agent")
+	# Multiple later rounds with real movement and unchanged life count.
+	var later_ok: int=0
+	for seed in range(3):
+		rng.seed=seed+100
+		m.create(rng,["easy","normal","hard"][seed])
+		var initial_lives:=m.lives
+		var late_agent:=Agent.new()
+		for tick in range(15000):
+			var result:=m.step(late_agent.input_for(m),1.0/60,rng)
+			if m.round>=4 or not result.is_empty() or m.lives<initial_lives:
+				break
+		later_ok+=int(m.round>=4 and m.lives==initial_lives)
+		print("SKYPORT LATER seed=",seed," round=",m.round," lives=",m.lives)
+	print("SKYPORT LATER SUMMARY ",later_ok,"/3")
+	check(later_ok==3,"M5-003 three rounds without life loss")
+	m.create(rng,"normal")
+	m.player=Vector2(65,83)
+	m.dash_left=0.25
+	m.last_axis=Vector2.RIGHT
+	for tick in range(15):
+		m.step({"right":true},1.0/60,rng)
+		check(not m.blocked(m.player),"M5-003 dash cannot enter wall")
 	var s:=Session.new()
 	s.configure(SkyModel.new(),42,"normal")
 	s.start()
@@ -117,14 +154,24 @@ func run() -> void:
 	s.resume()
 	var agent:=Agent.new()
 	var tape: Array[Dictionary]=[]
-	for block in range(1200):
-		var input:=agent.input_for(s.model)
+	var saw_dash: bool=false
+	var saw_door: bool=false
+	for block in range(2400):
+		var input: Dictionary={}
+		if block>=210:
+			input=agent.input_for(s.model)
+		if block==30:
+			input={"right":true,"pressed":{"secondary":Vector2.ZERO}}
 		tape.append(input)
 		s.set_input(input)
 		s.advance(2.0/60)
+		saw_dash=saw_dash or s.model.dash_cd>0
+		saw_door=saw_door or s.model.door_closed
 		if s.state!=Session.State.RUNNING:
 			break
 	check(s.model.round>1 and s.model.score>0,"M5 replay meaningful capture")
+	check(s.model.round>1 and s.model.score>0,"M5-003 real replay capture")
+	check(saw_dash and saw_door,"M5-003 replay dash and door")
 	var hash:=replay(60,tape)
 	check(hash==replay(30,tape) and hash==replay(120,tape),"M5 replay")
 	print("REPLAY res://games/terminal-chase/model.gd ",hash)

@@ -105,6 +105,8 @@ jobs:
           timeout 90s godot --headless --path . --script res://tests/test_m5.gd 2>&1 | tee /tmp/test-m5.log
           grep -Fx 'M5 failures: 0' /tmp/test-m5.log
           grep -Fx 'SKYPORT AGENT SUMMARY 12/12' /tmp/test-m5.log
+          grep -Fx 'SKYPORT NAIVE SUMMARY 12/12' /tmp/test-m5.log
+          grep -Fx 'SKYPORT LATER SUMMARY 3/3' /tmp/test-m5.log
           if grep -E 'SCRIPT ERROR|Parse Error' /tmp/test-m5.log; then exit 1; fi
 
       - name: Testar M6
@@ -132,8 +134,8 @@ jobs:
           timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_m4.gd
           timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_m5.gd
           timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_m6.gd
-          test "$(find build/screenshots -name 'G*-*.png' | wc -l)" -eq 40
-          test "$(find build/screenshots -name '*.png' | wc -l)" -eq 52
+          test "$(find build/screenshots -name 'G*-*.png' | wc -l)" -eq 42
+          test "$(find build/screenshots -name '*.png' | wc -l)" -eq 54
           for f in build/screenshots/*.png; do
             echo "SCREENSHOT:$(basename "$f"):$(base64 -w0 "$f")"
           done

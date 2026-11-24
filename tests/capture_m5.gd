@@ -32,9 +32,9 @@ func run() -> void:
 			for tick in range(3000):
 				view.host.session.set_input(agent.input_for(view.model))
 				view.host.session.advance(1.0/60)
-				if view.model.active_count==1:
+				if view.model.active_count==2:
 					break
-			if view.model.active_count!=1:
+			if view.model.active_count!=2:
 				push_error("M5 capture did not reach blocker state")
 				quit(1)
 				return
@@ -46,6 +46,16 @@ func run() -> void:
 				return
 			view.pause_game()
 			if not await snap(tag+"-pause"):
+				quit(1)
+				return
+			# Explicit deterministic visual fixture for late warning (not a live agent proof).
+			view._resume()
+			view.model.remaining=14
+			view.model.exit_revealed=true
+			view.model.door_warning=true
+			view.model.conveyor_warning=true
+			view.queue_redraw()
+			if not await snap(tag+"-warning-fixture"):
 				quit(1)
 				return
 			root.remove_child(view)
