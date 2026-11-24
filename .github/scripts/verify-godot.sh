@@ -10,10 +10,10 @@ workdir="$(mktemp -d)"
 trap 'rm -rf "$workdir"' EXIT
 
 wget -q "${base}/${archive}" -O "${workdir}/${archive}"
-wget -q "${base}/SHA512-SUMS.txt" -O "${workdir}/SHA512-SUMS.txt"
+expected="9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65"
 (
   cd "$workdir"
-  grep -F " ${archive}" SHA512-SUMS.txt | sha512sum -c -
+  printf '%s  %s\n' "$expected" "$archive" | sha512sum -c -
   sha512sum "$archive"
   unzip -q "$archive"
 )
