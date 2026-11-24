@@ -1,5 +1,5 @@
 extends SceneTree
-const Sky=preload("res://games/terminal-chase/model.gd")
+const SkyModel=preload("res://games/terminal-chase/model.gd")
 const Agent=preload("res://tests/m5_agent.gd")
 const Session=preload("res://core/session.gd")
 const View=preload("res://app/game_view.gd")
@@ -13,7 +13,7 @@ func _initialize() -> void:
 	call_deferred("run")
 func replay(fps: int,tape: Array[Dictionary]) -> String:
 	var s:=Session.new()
-	s.configure(Sky.new(),42,"normal")
+	s.configure(SkyModel.new(),42,"normal")
 	s.start()
 	for input: Dictionary in tape:
 		for frame in range(int(fps/30)):
@@ -31,7 +31,7 @@ func replay(fps: int,tape: Array[Dictionary]) -> String:
 	h.update(var_to_bytes([s.tick,s.rng.state,fields,s.get_result()]))
 	return h.finish().hex_encode()
 func run() -> void:
-	var m:=Sky.new()
+	var m:=SkyModel.new()
 	m.create(rng,"normal")
 	m.player=m.robot
 	m.step({},1.0/60,rng)
@@ -83,7 +83,7 @@ func run() -> void:
 	print("SKYPORT AGENT SUMMARY ",ok,"/12")
 	check(ok==12,"AC-G07-02 representative live agent")
 	var s:=Session.new()
-	s.configure(Sky.new(),42,"normal")
+	s.configure(SkyModel.new(),42,"normal")
 	s.start()
 	s.pause()
 	var frozen: float=s.model.remaining
