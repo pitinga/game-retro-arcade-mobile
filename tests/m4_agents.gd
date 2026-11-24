@@ -37,20 +37,20 @@ static func polar_input(m: RefCounted, naive: bool=false) -> Dictionary:
 	var goal: Vector2=m.stations[next]
 	var best_cost: float=INF
 	var best:=Vector2.ZERO
-	for index in range(32):
-		var dir:=Vector2.from_angle(index*TAU/32)
-		var target: Vector2=m.target_for(dir)
-		var valid: bool=m.station_at(target)>=0
-		var angular: float=float([0.12,0.17,0.22][m.difficulty])*m.W/75
-		for p: Dictionary in m.platforms:
-			var angle: float=p.angle+angular*m.JUMP
-			var landing: Vector2=m.stations[p.station]+Vector2(cos(angle)*83,sin(angle)*56)
-			if target.distance_to(landing)<10:
-				valid=true
-		if not valid:
+	var origin: Vector2=m.predicted_platform(m.support,1.0/60) if m.support>=0 else m.pos
+	var candidates: Array[Vector2]=m.stations.duplicate()
+	for index in m.platforms.size():
+		candidates.append(m.predicted_platform(index,m.JUMP+1.0/60))
+	for candidate: Vector2 in candidates:
+		var delta:=candidate-origin
+		if delta.length()<30 or delta.length()>0.20*m.W-0.01:
 			continue
-		var cost: float=target.distance_to(m.pos) if naive else target.distance_to(goal)
-		if not naive and cost>=Vector2(m.pos).distance_to(goal)-5:
+		var dir:=delta.normalized()
+		var target: Vector2=m.target_for(dir,1.0/60)
+		if target.distance_to(candidate)>3:
+			continue
+		var cost: float=target.distance_to(origin) if naive else target.distance_to(goal)
+		if not naive and cost>=origin.distance_to(goal)-3:
 			continue
 		if cost<best_cost:
 			best_cost=cost
