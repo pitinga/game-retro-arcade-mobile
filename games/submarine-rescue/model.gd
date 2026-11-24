@@ -33,6 +33,7 @@ func create(rng: RandomNumberGenerator,level: String) -> void:
 	delivered=0
 	time=0
 	next_id=0
+	wave_wait=0
 	reset_vehicle()
 	setup_wave(rng)
 func reset_vehicle() -> void:
