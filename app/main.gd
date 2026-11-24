@@ -9,7 +9,6 @@ var selected: String = ""
 var level: String = "normal"
 var shell: MarginContainer
 var content: VBoxContainer
-var _dialog: ConfirmationDialog
 var _status: Label
 const BG := Color("#101522")
 const SURFACE := Color("#202a3c")
@@ -118,6 +117,7 @@ func _catalog() -> void:
 		var orientation := tr2(" · Girar"," · Rotate") if item.landscape else ""
 		var title: String = item.name+"\n"+str(item[storage.prefs.language])+lock_text+orientation
 		var card := _button(title,_details.bind(item.id),grid)
+		card.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 		card.custom_minimum_size.y = 100
 	_button(tr2("Conhecer PRO","About PRO"),_upgrade)
 

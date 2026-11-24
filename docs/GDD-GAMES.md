@@ -17,7 +17,7 @@ Drone 40, patrulha 90, torreta 140, energia 20, setor completado 350; bônus por
 AC-G01-01: seed+input idênticos por 3 min produz setores/score idênticos; 1000 seeds geram corredor contínuo, rota viável e energia alcançável.
 AC-G01-02: boost drena mais; energia 95+38=100; repetir overlap não pontua; tiro não coleta.
 AC-G01-03: colisão simultânea margem/hostil tira uma vida; zero energia fatal; respawn válido e sem dupla recompensa; última vida encerra.
-AC-G01-04: portão passável, scroll/timing igual a 30/60/120 Hz render; dedos de tiro e direção independentes; pausa não drena energia.
+AC-G01-04: bifurcações e faróis passáveis, conclusão por distância, scroll/timing igual a 30/60/120 Hz render; dedos de tiro e direção independentes; pausa não drena energia.
 
 ## G02 — Horizon Rally (FREE, retrato)
 Referência: Enduro (Activision, 1983). Manual https://atariage.com/manual_html_page.php?SoftwareLabelID=163 ; perfil https://atariage.com/software_page.php?SoftwareLabelID=163 ; gameplay https://www.youtube.com/watch?v=1R7qVd49qTI&t=476s . Conceitos: corrida de resistência, ultrapassar meta de carros, clima, ciclo diurno. Nossa versão: rally de estrada panorâmica com visual 2.5D próprio, sem percurso original.

@@ -36,8 +36,8 @@ Cards com thumbnail própria, nome legível, cadeado somente bloqueados, scroll 
 │ Energia ███████░  ⏸ │
 ├──────────────────────┤
 │ ▲ rocha  ~~~~  rocha │
-│ ██╲    ╔════╗    ╱██ │
-│ ███╲   ╚    ╝   ╱███ │
+│ ██╲    ◈    ◈    ╱██ │
+│ ███╲  rota A/B  ╱███ │
 │ ████│    ◇     │████ │
 │ ███╱ ~   ↑   ~ ╲████ │
 │ ██╱     [E]     ╲███ │
@@ -120,7 +120,7 @@ Paleta: superfície #86D3E7, água #123A63→#081D38, veículo #F6C85D, cápsula
 │ [ D-PAD ]          [SALTO] [REPARAR]      │
 └────────────────────────────────────────────┘
 ```
-Três anéis de plataformas, três estações distintas, sem cinco faixas nem retorno à base. Neve #E3F1F5, água #203E6E, robô #F5E8CC, módulos #F5B95F, gelo #8BD1F0; contorno #15243D de 1–2 pixels lógicos em todos interativos, inclusive plataformas/robô/estações, contra neve e água usar contorno duplo claro #F5F7FF onde necessário. Validar >=3:1 em cada fundo real, símbolos de reparo e perigo. 
+Três anéis de plataformas, três estações distintas, sem cinco faixas nem retorno à base. Neve #E3F1F5, água #203E6E, robô #F5E8CC, estações #F5B95F, gelo #8BD1F0; contorno #15243D de 1–2 pixels lógicos em todos interativos, inclusive plataformas/robô/estações, contra neve e água usar contorno duplo claro #F5F7FF onde necessário. Validar >=3:1 em cada fundo real, símbolos de reparo e perigo. 
 
 ## G06 — Deep Signal · PRO · paisagem
 ```text
