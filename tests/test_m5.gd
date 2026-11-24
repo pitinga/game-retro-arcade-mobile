@@ -47,6 +47,15 @@ func run() -> void:
 	m.player=m.robot
 	m.step({},1.0/60,rng)
 	check(m.round==2 and m.score>=450,"AC-G07-04 capture once")
+	m.create(rng,"normal")
+	m.player=m.node(m.ZONES[0])
+	m.stun=0.45
+	m.step({"action":true},1.0/60,rng)
+	check(m.progress==0,"M5 self-review stunned interaction blocked")
+	m.remaining=15.0
+	m.step({},1.0/60,rng)
+	check(m.exit_revealed,"M5 self-review exit warning")
+	m.round=2
 	var old_score:=m.score
 	m.remaining=0.001
 	var lives:=m.lives
@@ -115,6 +124,7 @@ func run() -> void:
 		s.advance(2.0/60)
 		if s.state!=Session.State.RUNNING:
 			break
+	check(s.model.round>1 and s.model.score>0,"M5 replay meaningful capture")
 	var hash:=replay(60,tape)
 	check(hash==replay(30,tape) and hash==replay(120,tape),"M5 replay")
 	print("REPLAY res://games/terminal-chase/model.gd ",hash)

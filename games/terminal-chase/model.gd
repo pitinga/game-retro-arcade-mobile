@@ -31,6 +31,8 @@ var door_a: int=1
 var door_b: int=2
 var door_closed: bool=false
 var door_warning: bool=false
+var conveyor_warning: bool=false
+var exit_revealed: bool=false
 var last_axis:=Vector2.RIGHT
 var walls: Array[Rect2]=[]
 var maintenance: Array[Rect2]=[]
@@ -65,6 +67,8 @@ func setup(rng: RandomNumberGenerator) -> void:
 	door_b=door_a+1
 	door_closed=false
 	door_warning=false
+	conveyor_warning=false
+	exit_revealed=false
 	last_axis=Vector2.RIGHT
 	walls.clear()
 	for y in range(2):
@@ -115,6 +119,11 @@ func blocked(point: Vector2) -> bool:
 		if wall.grow(R).has_point(point):
 			return true
 	return door_closed and door_rect().grow(R).has_point(point)
+func clear_contact(a: Vector2,b: Vector2) -> bool:
+	for i in range(1,9):
+		if blocked(a.lerp(b,float(i)/8)):
+			return false
+	return true
 func update_door() -> void:
 	var cycle:=fposmod(time,9.0)
 	door_warning=cycle>=4 and cycle<5
@@ -151,6 +160,8 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 	immune=maxf(0,immune-dt)
 	contact_hint=maxf(0,contact_hint-dt)
 	update_door()
+	conveyor_warning=fposmod(time,4.0)>=3.0
+	exit_revealed=exit_revealed or remaining<=15
 	var axis:=Vector2(float(int(input.get("right",false))-int(input.get("left",false))),float(int(input.get("down",false))-int(input.get("up",false))))
 	var analog: Dictionary=input.get("analog",{})
 	if analog.has("stick"):
@@ -182,7 +193,7 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 	for i in range(3):
 		if not activated[i] and active_count<2 and player.distance_to(node(ZONES[i]))<23:
 			zone=i
-	if zone>=0 and (input.get("action",false) or input.get("fire",false)):
+	if zone>=0 and stun<=0 and (input.get("action",false) or input.get("fire",false)):
 		if progress_zone!=zone:
 			progress=0
 			progress_zone=zone
@@ -211,7 +222,7 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 			immune=1
 	if remaining<=0:
 		return lose(rng,"timeout")
-	if player.distance_to(robot)<R+13:
+	if player.distance_to(robot)<R+13 and clear_contact(player,robot):
 		if active_count>=2:
 			score+=450+int(floor(remaining*12))
 			round+=1

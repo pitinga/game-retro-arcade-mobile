@@ -565,6 +565,8 @@ func _draw_skyport() -> void:
 		draw_rect(box,GOLD,false,2)
 	var conveyor:=Rect2(65,151,130,42)
 	draw_rect(conveyor,Color("#294C50"))
+	if model.conveyor_warning:
+		draw_rect(conveyor,GOLD,false,3)
 	for i in range(5):
 		_txt(conveyor.position+Vector2(8+i*24,26),">" if fposmod(model.time,8)<4 else "<",18,MINT)
 	var door: Rect2=model.door_rect()
@@ -580,7 +582,7 @@ func _draw_skyport() -> void:
 	for id: int in model.EXITS:
 		var p: Vector2=model.node(id)+shift
 		var open: bool=id==model.exit_id and model.remaining<=10
-		var warn: bool=id==model.exit_id and model.remaining<=15
+		var warn: bool=id==model.exit_id and model.exit_revealed
 		draw_rect(Rect2(p-Vector2(18,12),Vector2(36,24)),BG)
 		draw_rect(Rect2(p-Vector2(18,12),Vector2(36,24)),GOLD if warn else WHITE,false,2)
 		_txt(p+Vector2(-12,4),"OUT" if open else ("!" if warn else "X"),12,WHITE)
@@ -593,9 +595,13 @@ func _draw_skyport() -> void:
 	draw_rect(Rect2(target-Vector2(13,11),Vector2(26,22)),WHITE,false,2)
 	draw_rect(Rect2(target-Vector2(6,4),Vector2(12,8)),BG)
 	var p: Vector2=model.player+shift
+	if model.stun>0:
+		draw_arc(p,15,0,TAU,20,GOLD,3)
 	draw_circle(p,11,BG)
 	draw_arc(p,11,0,TAU,24,MINT,3)
 	draw_line(p,p+Vector2(model.last_axis)*12,WHITE,2)
+	if model.door_warning or model.conveyor_warning:
+		_txt(Vector2(10,68),t("ATENÇÃO: MUDANÇA","CAUTION: CHANGE"),13,GOLD)
 	if model.contact_hint>0:
 		_txt(Vector2(200,70),t("ATIVE DOIS BLOQUEADORES","ACTIVATE TWO BLOCKERS"),14,GOLD)
 	for key: String in host.touch_regions:

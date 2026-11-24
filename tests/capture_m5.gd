@@ -34,6 +34,10 @@ func run() -> void:
 				view.host.session.advance(1.0/60)
 				if view.model.active_count==1:
 					break
+			if view.model.active_count!=1:
+				push_error("M5 capture did not reach blocker state")
+				quit(1)
+				return
 			view.queue_redraw()
 			var tag:=id+"-"+str(dims.x)+"x"+str(dims.y)
 			if not await snap(tag+"-game"):
