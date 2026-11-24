@@ -10,6 +10,9 @@ var level: String = "normal"
 var shell: MarginContainer
 var content: VBoxContainer
 var _status: Label
+var active_game: Control
+const GameView = preload("res://app/game_view.gd")
+const READY_GAMES = ["G03","G09","G10"]
 const BG := Color("#101522")
 const SURFACE := Color("#202a3c")
 const TEXT := Color("#f5f7ff")
@@ -101,6 +104,7 @@ func _button(value: String, action: Callable, parent: Control = null) -> Button:
 	return button
 
 func _catalog() -> void:
+	active_game=null
 	page = "catalog"
 	selected = ""
 	if OS.has_feature("android"):
@@ -144,9 +148,49 @@ func _details(id: String) -> void:
 	option.select(["easy","normal","hard"].find(level))
 	content.add_child(option)
 	option.item_selected.connect(func(index: int) -> void: level = ["easy","normal","hard"][index])
-	_label(tr2("Recorde: — (jogo ainda não implementado)","Best: — (game not implemented yet)"))
-	var play := _button(tr2("Em breve · gameplay pendente","Coming soon · gameplay pending"),func() -> void: pass)
-	play.disabled = true
+	var record_key:=id+":"+level+":1"
+	_label(tr2("Recorde: ","Best: ")+str(storage.records.get(record_key,0)))
+	if id in READY_GAMES:
+		_button(tr2("Jogar","Play"),_prepare_game.bind(id))
+	else:
+		var play := _button(tr2("Em breve · gameplay pendente","Coming soon · gameplay pending"),func() -> void: pass)
+		play.disabled=true
+
+func _prepare_game(id: String) -> void:
+	if not commerce.can_access(id) or not id in READY_GAMES:
+		_details(id)
+		return
+	if Catalog.find(id).landscape:
+		page="prepare"
+		_reset(tr2("Gire o aparelho","Rotate your device"))
+		_label(tr2("Este jogo usa paisagem. Gire o aparelho antes de jogar.","This game uses landscape. Rotate your device before playing."))
+		_button(tr2("Continuar","Continue"),_start_game.bind(id))
+		_button(tr2("Voltar","Back"),_details.bind(id))
+	else:
+		_start_game(id)
+func _start_game(id: String) -> void:
+	if not commerce.can_access(id) or not id in READY_GAMES:
+		_details(id)
+		return
+	page="game"
+	selected=id
+	if OS.has_feature("android"):
+		DisplayServer.screen_set_orientation(DisplayServer.SCREEN_LANDSCAPE if Catalog.find(id).landscape else DisplayServer.SCREEN_PORTRAIT)
+	for node: Node in get_children():
+		remove_child(node)
+		node.queue_free()
+	shell=null
+	var view:=GameView.new()
+	view.configure(id,level,storage.prefs.language,storage.prefs)
+	active_game=view
+	view.exit_requested.connect(_catalog)
+	view.restart_requested.connect(_start_game.bind(id))
+	view.completed.connect(_game_completed.bind(id,level))
+	add_child(view)
+	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+func _game_completed(result: Dictionary,id: String,difficulty: String) -> void:
+	storage.record(id,difficulty,"1",int(result.get("score",0)))
+	# Commerce is intentionally not integrated; no ads in M2.
 
 func _upgrade() -> void:
 	page = "upgrade"
@@ -205,10 +249,13 @@ func _notification(what: int) -> void:
 		_handle_back()
 
 func back_action() -> String:
-	return "exit" if page == "catalog" else "catalog"
+	return "exit" if page == "catalog" else ("pause" if page=="game" else "catalog")
 func _handle_back() -> void:
 	if back_action() == "exit":
 		get_tree().quit()
+	elif back_action()=="pause":
+		if is_instance_valid(active_game):
+			active_game.call("pause_game")
 	else:
 		_catalog()
 
