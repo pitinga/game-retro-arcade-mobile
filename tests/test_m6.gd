@@ -1,4 +1,6 @@
 extends SceneTree
+const DeepData=preload("res://games/cave-rescue/levels.gd")
+const EmeraldData=preload("res://games/jungle-expedition/rooms.gd")
 const DeepModel=preload("res://games/cave-rescue/model.gd")
 const EmeraldModel=preload("res://games/jungle-expedition/model.gd")
 const Agent=preload("res://tests/m6_agents.gd")
@@ -41,6 +43,17 @@ func run() -> void:
 		for level in range(1,21):
 			d.level=level
 			d.load_level()
+			var rows: Array=DeepData.LEVELS[level-1]
+			check(rows.size()==10,"M6-003 map height")
+			var starts: int=0
+			var rescues: int=0
+			for row: String in rows:
+				check(row.length()==26,"M6-003 map width")
+				starts+=row.count("S")
+				rescues+=row.count("R")
+			check(starts==1 and rescues==1,"M6-003 unique start/rescue")
+			for cell: Vector2i in d.hazards:
+				check(not Rect2(Vector2(cell)*24,Vector2.ONE*24).intersects(d.hitbox(d.scientist)) and d.center(cell).distance_to(d.scientist)>=40,"M6-008 rescue clearance")
 			var gates: int=0
 			for cell: Vector2i in d.cells:
 				if d.cells[cell]=="B":
@@ -62,7 +75,9 @@ func run() -> void:
 			check(reachable.size()==8,"AC-G08-01 connected region "+str(region))
 			for room in range(8):
 				e.enter(room,36)
-				check(e.gap.size.x<=48,"AC-G08-02 gap geometry")
+				var spec: Array=EmeraldData.ROOMS[(region-1)*8+room]
+				check(spec.size()==3 and spec[0] in [0,1] and spec[2] in [0,1],"M6-003 valid room descriptor")
+				check(e.gap.size.x==0 or (e.gap.position.x>=100 and e.gap.end.x<=540),"M6-003 gap inside field")
 	d.create(rng,"normal")
 	d.energy=0
 	d.step({"fire":true},1.0/60,rng)
@@ -114,27 +129,41 @@ func run() -> void:
 		e.step({"action":true,"up":true},1.0/60,rng)
 		if e.room==0: break
 	check(e.room==0,"AC-G08-02 climb transition")
+	e.enter(0,320)
+	e.step({"down":true},1.0/60,rng)
+	check(e.room==0 and e.ladder_progress>0,"M6-005 descent not instant")
+	for tick in range(120):
+		e.step({"down":true},1.0/60,rng)
+		if e.room==4: break
+	check(e.room==4,"M6-005 descent completes")
+	e.enter(4,80)
+	e.step({"action":true},1.0/60,rng)
+	check(e.checkpoint_set,"M6-005 checkpoint active")
+	e.lose()
+	check(e.room==4 and is_equal_approx(e.pos.x,80),"M6-005 checkpoint respawn")
 	var deep_ok: int=0
 	var emerald_ok: int=0
 	for mode: String in ["easy","normal","hard"]:
 		d.create(rng,mode)
 		var agent:=Agent.new()
 		var completed: bool=false
+		var initial_lives:=d.lives
 		for tick in range(72000):
 			result=d.step(agent.deep_input(d),1.0/60,rng)
 			if not result.is_empty():
 				completed=result.get("reason","")=="victory"
 				break
-		deep_ok+=int(completed)
+		deep_ok+=int(completed and d.lives==initial_lives)
 		print("DEEP CAMPAIGN ",mode," level=",d.level," lives=",d.lives," won=",completed)
 		e.create(rng,mode)
+		initial_lives=e.lives
 		completed=false
 		for tick in range(108000):
 			result=e.step(agent.emerald_input(e),1.0/60,rng)
 			if not result.is_empty():
 				completed=result.get("reason","")=="victory"
 				break
-		emerald_ok+=int(completed)
+		emerald_ok+=int(completed and e.lives==initial_lives)
 		print("EMERALD CAMPAIGN ",mode," region=",e.region," room=",e.room," artifacts=",e.collected.size()," lives=",e.lives," won=",completed)
 	print("DEEP CAMPAIGN SUMMARY ",deep_ok,"/3")
 	print("EMERALD CAMPAIGN SUMMARY ",emerald_ok,"/3")
@@ -150,7 +179,7 @@ func run() -> void:
 		s.resume()
 		var tape: Array[Dictionary]=[]
 		var agent:=Agent.new()
-		for block in range(600):
+		for block in range(3600):
 			var input: Dictionary=agent.deep_input(s.model) if script==DeepModel else agent.emerald_input(s.model)
 			tape.append(input)
 			s.set_input(input)

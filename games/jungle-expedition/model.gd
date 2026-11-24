@@ -25,6 +25,7 @@ var buffer: float=0
 var immune: float=0
 var facing: int=1
 var climbing: bool=false
+var ladder_progress: float=0
 var transition_cd: float=0
 var on_bridge: bool=false
 var bridge_x: float=0
@@ -57,6 +58,7 @@ func enter(id: int,x: float) -> void:
 	coyote=0.09
 	buffer=0
 	climbing=false
+	ladder_progress=0
 	on_bridge=false
 	transition_cd=0.25
 	collapse=0
@@ -75,7 +77,7 @@ func neighbors(id: int) -> Array[int]:
 	var out: Array[int]=[]
 	if id%4>0: out.append(id-1)
 	if id%4<3: out.append(id+1)
-	if id%2==0: out.append(id+4 if id<4 else id-4)
+	if id in Data.LADDERS: out.append(id+4 if id<4 else id-4)
 	return out
 func artifact_pos() -> Vector2:
 	return Vector2(550,FLOOR-20)
@@ -83,7 +85,7 @@ func lose() -> Dictionary:
 	lives-=1
 	if lives<=0:
 		return {"score":score,"progress":region,"reason":"lost"}
-	enter(checkpoint,36)
+	enter(checkpoint,80 if checkpoint_set else 36)
 	immune=1.2
 	return {}
 func step(input: Dictionary,dt: float,_rng: RandomNumberGenerator) -> Dictionary:
@@ -114,21 +116,22 @@ func step(input: Dictionary,dt: float,_rng: RandomNumberGenerator) -> Dictionary
 			collapse+=dt
 		else:
 			collapse=maxf(0,collapse-dt)
-	var ladder: bool=room%2==0 and absf(pos.x-320)<17
-	if input.get("action",false) and ladder and (absf(axis.y)>0.15 or climbing):
+	var ladder: bool=room in Data.LADDERS and absf(pos.x-320)<17
+	# Stick direction alone is sufficient; both directions take the same time.
+	var ladder_direction: float=1.0 if room<4 else -1.0
+	if ladder and axis.y*ladder_direction>0.6:
 		climbing=true
 		grounded=false
 		vel=Vector2.ZERO
 		pos.x=320
-		pos.y=clampf(pos.y+axis.y*95*dt,48,FLOOR-HALF.y)
-		if room<4 and axis.y>0 and pos.y>=FLOOR-HALF.y and transition_cd<=0:
-			enter(room+4,320)
-			return {}
-		if room>=4 and axis.y<0 and pos.y<=48 and transition_cd<=0:
-			enter(room-4,320)
+		ladder_progress=minf(1.0,ladder_progress+95.0*dt/(FLOOR-HALF.y-48))
+		pos.y=lerpf(FLOOR-HALF.y,48.0,ladder_progress)
+		if ladder_progress>=1 and transition_cd<=0:
+			enter(room+4 if room<4 else room-4,320)
 			return {}
 	else:
 		climbing=false
+		ladder_progress=0
 		if buffer>0 and coyote>0:
 			vel.y=JUMP
 			buffer=0

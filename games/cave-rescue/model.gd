@@ -177,7 +177,7 @@ func step(input: Dictionary,dt: float,_rng: RandomNumberGenerator) -> Dictionary
 			return lose()
 	else:
 		grace=1.5
-	if pos.distance_to(scientist)<20 and input.get("action",false):
+	if pos.distance_to(scientist)<20 and absf(vel.x)<20 and absf(vel.y)<20:
 		rescue_hold+=dt
 		if rescue_hold>=0.6-0.000001:
 			score+=600+int(floor(energy*3))

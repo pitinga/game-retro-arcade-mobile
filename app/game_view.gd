@@ -182,9 +182,9 @@ func _show_intro() -> void:
 	elif game_id=="G05":
 		message=t("Escolha a direção, SALTE e segure REPARAR em três estações.","Choose direction, JUMP and hold REPAIR at three stations.")
 	elif game_id=="G06":
-		message=t("Voe com JET, use PULSO e CORTE. Afaste-se da carga e resgate com PULSO.","Hold JET, use PULSE and CUT. Move away from the charge, rescue with PULSE.")
+		message=t("Voe com JET, use PULSO e CORTE. Afaste-se da carga e pare perto do cientista para resgatar.","Hold JET, use PULSE and CUT. Move away from the charge, stop near the scientist to rescue.")
 	elif game_id=="G08":
-		message=t("Explore, salte e use AÇÃO com direção para escalar. Reúna quatro artefatos e volte ao acampamento.","Explore, jump and hold ACTION with direction to climb. Collect four artifacts and return to camp.")
+		message=t("Explore, salte e use a direção vertical para escalar. Reúna quatro artefatos e volte ao acampamento.","Explore, jump and use vertical direction to climb. Collect four artifacts and return to camp.")
 	elif game_id=="G07":
 		message=t("Ative dois bloqueadores e intercepte o robô antes da fuga.","Activate two blockers, then intercept the robot before escape.")
 	elif game_id=="G09":
@@ -640,20 +640,33 @@ func _draw_deep() -> void:
 	_txt(Vector2(12,39),"%06d  %s %d%%  %s %d  F%02d/20  %s %d"%[model.score,t("ENERGIA","ENERGY"),int(model.energy),t("CORTES","CUTS"),model.charges,model.level,t("VIDAS","LIVES"),model.lives],14)
 	var shift:=Vector2(8,48)
 	draw_rect(Rect2(0,48,640,248),Color("#17283C"))
+	if model.level>=11:
+		# Partial darkness outside the local viewport, keeping a clear hazard lookahead.
+		var near_x: float=clampf(model.pos.x+8-160,0,640)
+		var far_x: float=clampf(model.pos.x+8+180,0,640)
+		draw_rect(Rect2(0,48,near_x,240),Color(0.025,0.04,0.08,0.36))
+		draw_rect(Rect2(far_x,48,640-far_x,240),Color(0.025,0.04,0.08,0.36))
 	for cell: Vector2i in model.cells:
 		var p: Vector2=Vector2(cell)*Deep.TILE+shift
 		var box:=Rect2(p,Vector2.ONE*Deep.TILE)
 		var breakable: bool=model.cells[cell]=="B"
-		draw_rect(box,Color("#96683E") if breakable else Color("#35475C"))
-		draw_rect(box,GOLD if breakable else Color("#526882"),false,1)
+		draw_rect(box,Color("#78552D") if breakable else Color("#35475C"))
+		draw_rect(box,GOLD if breakable else Color("#A9BBD3"),false,2)
 		if breakable:
 			draw_line(p+Vector2(4,4),p+Vector2(20,20),GOLD,2)
 			draw_line(p+Vector2(20,4),p+Vector2(4,20),GOLD,2)
 	for cell: Vector2i in model.hazards:
 		var p: Vector2=Vector2(cell)*Deep.TILE+shift
 		var active: bool=model.hazards[cell]=="W" or model.vapor_active()
-		draw_rect(Rect2(p,Vector2.ONE*24),Color("#A84950") if active else Color("#4D6479"))
-		_txt(p+Vector2(7,17),"!" if active or model.vapor_warning() else ".",16,WHITE)
+		var warning: bool=not active and model.vapor_warning()
+		var tile:=Rect2(p,Vector2.ONE*24)
+		draw_rect(tile,Color("#963745") if active else Color("#35475C"))
+		draw_rect(tile,WHITE if active else (GOLD if warning else Color("#A9BBD3")),false,2)
+		if active:
+			draw_line(p+Vector2(3,3),p+Vector2(21,21),WHITE,3)
+			draw_line(p+Vector2(21,3),p+Vector2(3,21),WHITE,3)
+		else:
+			_txt(p+Vector2(7,17),"!" if warning else ".",16,WHITE)
 	for cell: Vector2i in model.batteries:
 		var p: Vector2=model.center(cell)+shift
 		draw_rect(Rect2(p-Vector2(8,10),Vector2(16,20)),MINT)
@@ -678,12 +691,6 @@ func _draw_deep() -> void:
 		_txt(c+Vector2(-16,-39),"%.1fs"%model.cut_timer,13,GOLD)
 	if model.energy<=0:
 		_txt(Vector2(10,64),t("SEM ENERGIA ","NO POWER ")+("%.1fs"%model.grace),14,GOLD)
-	if model.level>=11:
-		# Partial darkness outside the local viewport, keeping a clear hazard lookahead.
-		var near_x: float=clampf(p.x-160,0,640)
-		var far_x: float=clampf(p.x+180,0,640)
-		draw_rect(Rect2(0,48,near_x,240),Color(0.025,0.04,0.08,0.36))
-		draw_rect(Rect2(far_x,48,640-far_x,240),Color(0.025,0.04,0.08,0.36))
 	if model.rescue_hold>0:
 		draw_arc(target,18,-PI/2,-PI/2+TAU*model.rescue_hold/0.6,24,MINT,3)
 	for key: String in host.touch_regions:
@@ -698,7 +705,7 @@ func _draw_emerald() -> void:
 		var x: float=float((i*109+model.room*31)%640)
 		draw_rect(Rect2(x,70,16,150),Color("#214F4A"))
 		draw_circle(Vector2(x+8,92),32,Color("#28645A"))
-	draw_rect(Rect2(0,48+Emerald.FLOOR,640,32),Color("#89755A"))
+	draw_rect(Rect2(0,48+Emerald.FLOOR,640,32),Color("#B29C78"))
 	draw_line(Vector2(0,48+Emerald.FLOOR),Vector2(640,48+Emerald.FLOOR),MINT,2)
 	if model.gap.size.x>0:
 		var gap: Rect2=model.gap
@@ -710,7 +717,7 @@ func _draw_emerald() -> void:
 			draw_rect(bridge,WHITE,false,1)
 		if model.collapse>=0.4:
 			_txt(Vector2(model.bridge_x-10,48+Emerald.FLOOR-10),"!",16,GOLD)
-	if model.room%2==0:
+	if model.room in [0,2,4,6]:
 		for y in range(60,216,14):
 			draw_line(Vector2(309,y+48),Vector2(331,y+48),Color("#D5B47B"),3)
 		draw_line(Vector2(309,108),Vector2(309,264),Color("#D5B47B"),2)
