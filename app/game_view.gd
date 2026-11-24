@@ -98,8 +98,8 @@ func _layout() -> void:
 		if action in ["aim","paddle"]:
 			continue
 		var area: Rect2=controls[action]
-		var height:=clampf(area.size.y*control_size,48.0,area.size.y)
-		controls[action]=Rect2(area.position+Vector2(0,(area.size.y-height)/2),Vector2(area.size.x,height))
+		var target_size:=Vector2(clampf(area.size.x*control_size/1.5,48.0,area.size.x),clampf(area.size.y*control_size/1.5,48.0,area.size.y))
+		controls[action]=Rect2(area.get_center()-target_size/2,target_size)
 	host.configure_layout(safe,landscape,controls)
 	var rect: Rect2=fitted.rect
 	var scale: float=fitted.scale
@@ -386,7 +386,7 @@ func _draw_rally() -> void:
 	_txt(Vector2(12,22),"HORIZON RALLY",18,MINT)
 	_txt(Vector2(12,45),"D%02d  %02d/%02d  %03d km/h"%[model.day,model.passes,model.goal,int(model.speed*3.6)],14)
 	var sky: Color=[Color("#5FA9C7"),Color("#BC7774"),Color("#202A49"),Color("#C5A08C")][model.phase()]
-	var land: Color=Color("#405A54") if model.phase()!=2 else Color("#172D31")
+	var land: Color=Color("#152B22") if model.phase()!=2 else Color("#10201E")
 	draw_rect(Rect2(0,64,360,130),sky)
 	draw_rect(Rect2(0,194,360,334),land)
 	for i in range(30):
@@ -404,19 +404,26 @@ func _draw_rally() -> void:
 	for car: Dictionary in ordered:
 		if car.z<0 or car.z>150:
 			continue
-		var p:=road_point(car.z,model.lanes[car.lane])
+		var p:=road_point(car.z,model.car_lateral(car))
 		var depth:=clampf(1-float(car.z)/150,0,1)
 		var r:=Vector2(lerpf(7,26,depth),lerpf(5,24,depth))
 		draw_rect(Rect2(p-r/2,r),Color("#F0B680"))
 		draw_rect(Rect2(p-r/2,r),BG,false,1)
+		if float(car.get("warn",0))>0:
+			draw_circle(p+Vector2(signf(float(car.target-car.lane))*r.x/2,-r.y/2),3,GOLD)
 		draw_rect(Rect2(p-r/2+Vector2(2,r.y-4),Vector2(3,3)),Color("#FF4E70"))
 		draw_rect(Rect2(p+r/2-Vector2(5,4),Vector2(3,3)),Color("#FF4E70"))
 	var player:=road_point(0,model.lateral)
 	draw_rect(Rect2(player-Vector2(20,13),Vector2(40,26)),MINT)
+	draw_rect(Rect2(player-Vector2(20,13),Vector2(40,26)),WHITE,false,2)
 	draw_rect(Rect2(player-Vector2(12,10),Vector2(24,9)),BG)
 	draw_rect(Rect2(8,70,214,48),BG)
 	_txt(Vector2(14,88),"%s %02ds  HP %d"%[t("TEMPO","TIME"),int(ceil(90-model.elapsed)),model.integrity],14)
-	_txt(Vector2(14,108),t("FAIXA LIVRE: ","CLEAR LANE: ")+str(model.safe_lane+1),13,GOLD)
+	_txt(Vector2(14,108),t("DESVIE DO TRÁFEGO","AVOID TRAFFIC"),13,GOLD)
+	if model.elapsed>=model.weather_start-3 and model.elapsed<model.weather_start:
+		_txt(Vector2(230,88),t("NEBLINA EM BREVE","FOG SOON"),11,GOLD)
+	elif model.elapsed>=model.weather_start+7 and model.elapsed<model.weather_start+10:
+		_txt(Vector2(230,88),t("GELO EM BREVE","ICE SOON"),11,GOLD)
 	if model.fog:
 		draw_rect(Rect2(0,194,360,315),Color(0.75,0.85,0.9,0.19))
 		_txt(Vector2(230,88),t("NEBLINA","FOG"),14,GOLD)

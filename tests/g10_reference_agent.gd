@@ -58,5 +58,5 @@ func run() -> void:
 				uncovered+=7-m.habitats.count(true)-m.launchers.count(true)
 			print("AGENT seed=",seed," wave=",wave," cleared=",m.wave_wait>=0," intact=",m.habitats.count(true),"/",m.launchers.count(true))
 	print("AGENT SUMMARY attempted=",attempted," cleared=",cleared," structures_lost=",uncovered)
-	# Report empirical coverage rather than claim a mathematical solver. Must complete at least one sample.
-	quit(0 if attempted==36 and cleared>0 else 1)
+	# Report empirical coverage rather than claim a mathematical solver. All representative scenarios must clear with every structure intact.
+	quit(0 if attempted==36 and cleared==attempted and uncovered==0 else 1)

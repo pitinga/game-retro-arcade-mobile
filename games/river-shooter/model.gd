@@ -20,6 +20,7 @@ var elapsed: float=0.0
 var next_bonus: int=8000
 var damage: bool=false
 var route: int=0
+var fork_z: float=-1.0
 var drag_id: int=-999
 var drag_start: float=0.0
 var centers: Array[float]=[]
@@ -47,24 +48,27 @@ func generate_sector(rng: RandomNumberGenerator,start_center: float) -> void:
 	objects.clear()
 	consumed.clear()
 	rewarded.clear()
-	# Energy on continuous center route; enemies offset from center, never block it.
+	# Alternating energy lanes; center is not a safe autopilot route.
 	var id: int=0
 	var z: float=0.65*H
 	while z<length:
 		id+=1
 		var lane:=corridor(z)
-		objects.append({"id":id,"z":z,"x":lane.x,"kind":"energy","cooldown":0.0,"side":0.0})
+		var offset: float=0.0 if sector==1 else (-1.0 if id%2==1 else 1.0)*lane.y*0.30
+		objects.append({"id":id,"z":z,"x":lane.x+offset,"kind":"energy","cooldown":0.0,"side":0.0})
 		z+=0.72*H
 	z=1.0*H
 	while z<length-0.1*H:
 		id+=1
 		var lane:=corridor(z)
-		var side: float=-1.0 if id%2==0 else 1.0
-		var kind: String="turret" if sector>=4 and id%4==0 else ("patrol" if sector>=2 and id%3==0 else "drone")
+		var side: float=0.0 if sector>=2 and id%2==0 else (-1.0 if id%3==0 else 1.0)
+		var kind: String="turret" if sector>=4 and id%4==0 else ("patrol" if sector>=2 and id%3==0 and side!=0 else "drone")
 		objects.append({"id":id,"z":z,"x":lane.x+side*lane.y*0.34,"kind":kind,"cooldown":1.0,"side":side})
-		z+=rng.randf_range(0.32,0.52)*H
+		z+=rng.randf_range(0.32,0.52)*H*maxf(0.62,1.0-0.04*maxi(0,sector-4))
+	fork_z=-1.0
 	if sector>=3:
 		var fork:=length*0.55
+		fork_z=fork
 		var lane:=corridor(fork)
 		for side: int in [-1,1]:
 			id+=1
@@ -104,6 +108,7 @@ func collect(o: Dictionary) -> void:
 	elif o.kind=="beacon" and route==0:
 		route=int(o.side)
 		points(60 if route<0 else 90)
+		# Choice changes scroll/energy tradeoff over remainder of sector.
 func lose() -> Dictionary:
 	lives-=1
 	damage=true
@@ -129,9 +134,11 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 	var brake: bool=input.get("down",false) and not boost
 	var scroll:=minf(0.52,float([0.24,0.30,0.36][difficulty])+0.015*(sector-1))*H
 	scroll*=1.35 if boost else (0.7 if brake else 1.0)
+	if route>0:
+		scroll*=1.10
 	distance+=scroll*dt
 	elapsed+=dt
-	energy=maxf(0,energy-float([4,5,6][difficulty])*(1.25 if boost else 1.0)*dt)
+	energy=maxf(0,energy-float([4,5,6][difficulty])*(1.25 if boost else 1.0)*(1.20 if route>0 else 1.0)*dt)
 	immune=maxf(0,immune-dt)
 	fire_cd=maxf(0,fire_cd-dt)
 	var direction:=float(int(input.get("right",false))-int(input.get("left",false)))
@@ -218,6 +225,11 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 	if distance>=length:
 		points(350+(0 if damage else 100))
 		var end_center:=corridor(length).x
+		var old_x:=x
+		var old_energy:=energy
 		sector+=1
 		generate_sector(rng,end_center)
+		var next_lane:=corridor(0)
+		x=clampf(old_x,next_lane.x-next_lane.y/2+R,next_lane.x+next_lane.y/2-R)
+		energy=old_energy
 	return {}

@@ -14,12 +14,17 @@ func check(ok: bool,label: String) -> void:
 		push_error(label)
 func _initialize() -> void:
 	call_deferred("run")
+func bytes_hash(bytes: PackedByteArray) -> String:
+	var h:=HashingContext.new()
+	h.start(HashingContext.HASH_SHA256)
+	h.update(bytes)
+	return h.finish().hex_encode()
 func state_hash(session: RefCounted) -> String:
 	var fields: Dictionary={}
 	for prop: Dictionary in session.model.get_property_list():
 		if int(prop.usage)&PROPERTY_USAGE_SCRIPT_VARIABLE:
 			fields[prop.name]=session.model.get(prop.name)
-	return str([session.tick,session.rng.state,fields,session.get_result()]).sha256_text()
+	return bytes_hash(var_to_bytes([session.tick,session.rng.state,fields,session.get_result()]))
 func replay(script: GDScript,_id: String,fps: int) -> String:
 	var s:=Session.new()
 	s.configure(script.new(),12345,"normal")

@@ -16,6 +16,9 @@ var invulnerable: float=0.0
 var spawn_cd: float=0.0
 var next_id: int=0
 var safe_lane: int=1
+var group_id: int=0
+var traffic_speed: float=20.0
+var next_gap: int=1
 var weather_start: float=0.0
 var fog: bool=false
 var ice: bool=false
@@ -40,6 +43,10 @@ func begin_day(rng: RandomNumberGenerator) -> void:
 	passes=0
 	goal=mini(55,int([18,24,30][difficulty])+4*(day-1))
 	safe_lane=rng.randi_range(0,2)
+	next_gap=safe_lane
+	group_id=0
+	traffic_speed=rng.randf_range(45,125)/3.6
+	speed=0
 	weather_start=rng.randf_range(32,60)
 	fog=false
 	ice=false
@@ -53,25 +60,41 @@ func curve(z: float) -> float:
 	return sin(z/180.0+day*0.7)*0.22+sin(z/390.0)*0.12
 func phase() -> int:
 	return 0 if elapsed<30 else (1 if elapsed<55 else (2 if elapsed<75 else 3))
+func car_lateral(car: Dictionary) -> float:
+	return lerpf(lanes[car.lane],lanes[int(car.get("target",car.lane))],clampf(float(car.get("shift",0)),0,1))
 func spawn(rng: RandomNumberGenerator) -> void:
-	# Reserve one uninterrupted lane per day; traffic chooses the other two.
-	var available: Array[int]=[]
-	for i in range(3):
-		if i!=safe_lane:
-			var clear: bool=true
-			for car: Dictionary in rivals:
-				if car.lane==i and absf(float(car.z)-95)<24:
-					clear=false
-			if clear:
-				available.append(i)
-	if available.is_empty() or rivals.size()>=16:
+	if rivals.size()>14:
 		return
-	var lane: int=available[rng.randi_range(0,available.size()-1)]
-	next_id+=1
-	rivals.append({"id":next_id,"lane":lane,"z":95.0,"speed":rng.randf_range(45,100)/3.6,"counted":false,"hit":false})
+	for car: Dictionary in rivals:
+		if absf(float(car.z)-95)<18:
+			return
+	var old_gap:=next_gap
+	# Adjacent gaps, no fixed safe lane. Incoming pair telegraphs one lane change.
+	var new_gap: int=1 if old_gap!=1 else (0 if rng.randf()<0.5 else 2)
+	next_gap=new_gap
+	group_id+=1
+	for lane in range(3):
+		if lane==old_gap:
+			continue
+		next_id+=1
+		var target: int=old_gap if lane==new_gap else lane
+		rivals.append({"id":next_id,"group":group_id,"lane":lane,"target":target,"shift":0.0,"warn":1.0 if lane!=target else 0.0,"z":95.0,"speed":traffic_speed,"counted":false,"hit":false})
+func traffic_step(dt: float) -> void:
+	for car: Dictionary in rivals:
+		if not car.has("target") or car.target==car.lane:
+			continue
+		car.warn=maxf(0,float(car.warn)-dt)
+		if car.warn<=0:
+			car.shift=minf(1,float(car.shift)+dt/0.45)
+			if car.shift>=1:
+				car.lane=car.target
+				car.shift=0.0
 func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 	if input.get("pressed",{}).has("secondary"):
 		auto_accel=not auto_accel
+	if countdown>0:
+		countdown=maxf(0,countdown-dt)
+		return {}
 	var braking: bool=input.get("down",false)
 	var accelerating: bool=input.get("up",false) or auto_accel
 	speed=clampf(speed+( -15.0 if braking else (8.0 if accelerating else -2.0))*dt,0,200.0/3.6)
@@ -88,9 +111,6 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 	lateral=clampf(lateral+steer*steering()*dt,-1.15,1.15)
 	if absf(lateral)>1.0:
 		speed=maxf(0,speed-12*dt)
-	if countdown>0:
-		countdown=maxf(0,countdown-dt)
-		return {}
 	elapsed+=dt
 	fog=elapsed>=weather_start and elapsed<weather_start+7
 	ice=elapsed>=weather_start+10 and elapsed<weather_start+18
@@ -99,13 +119,14 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 	spawn_cd-=dt
 	if spawn_cd<=0:
 		spawn(rng)
-		spawn_cd=0.92
+		spawn_cd=1.95
+	traffic_step(dt)
 	for i in range(rivals.size()-1,-1,-1):
 		var car: Dictionary=rivals[i]
 		var before: float=car.z
 		var after:=before+(float(car.speed)-speed)*dt
 		car.z=after
-		var separated:=absf(lateral-lanes[car.lane])>=0.32
+		var separated:=absf(lateral-car_lateral(car))>=0.32
 		# Swept longitudinal overlap, before scoring at the crossing.
 		if not separated and minf(before,after)<=3 and maxf(before,after)>=-3:
 			car.hit=true
