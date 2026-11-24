@@ -77,7 +77,7 @@ func setup(rng: RandomNumberGenerator) -> void:
 	maintenance=[Rect2(270,103,92,42)]
 	drones.clear()
 	for i in range(mini(4,1+int(round/2.0))):
-		drones.append({"pos":node(8+i),"phase":rng.randf_range(0,TAU),"row":2 if i%2==0 else 0})
+		drones.append({"pos":node(8+i),"phase":rng.randf_range(0,TAU),"row":[2,1,0,2][i]})
 func neighbors(id: int,avoid_door: bool=true) -> Array[int]:
 	var result: Array[int]=[]
 	for n: int in [id-1,id+1,id-4,id+4]:
@@ -144,7 +144,16 @@ func choose_robot(rng: RandomNumberGenerator,previous: int) -> int:
 			preferred.append(n)
 	if not preferred.is_empty():
 		choices=preferred
-	return choices[rng.randi_range(0,choices.size()-1)] if not choices.is_empty() else previous
+	if choices.is_empty():
+		return previous
+	# Evade the player instead of blindly moving; occasional seeded choice prevents a fixed loop.
+	if active_count>=2 and rng.randf()<minf(0.82,0.50+0.035*(round-1)):
+		var best: int=choices[0]
+		for candidate: int in choices:
+			if node(candidate).distance_squared_to(player)>node(best).distance_squared_to(player):
+				best=candidate
+		return best
+	return choices[rng.randi_range(0,choices.size()-1)]
 func lose(rng: RandomNumberGenerator,reason: String) -> Dictionary:
 	lives-=1
 	if lives<=0:
@@ -182,7 +191,7 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 		move=last_axis*speed*dt
 	# Conveyor on central horizontal segment, alternates direction with warning.
 	if Rect2(65,103,130,42).has_point(player):
-		move.x+=float(1 if fposmod(time,8)<4 else -1)*24*dt
+		move.x+=float(1 if fposmod(time,8)<4 else -1)*(0.12*W)*dt
 	var next:=player+Vector2(move.x,0)
 	if not blocked(next):
 		player.x=clampf(next.x,R,W-R)

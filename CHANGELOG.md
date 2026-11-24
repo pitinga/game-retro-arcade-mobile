@@ -9,3 +9,7 @@
 - G04: zona morta 8u, corredor raso separado dos inimigos, bônus apenas carga cheia.
 - G05: prazo e rajada sinalizada, símbolos e rótulos distintos, stick direcional.
 - M3 residual: reset de rota sem duplicar recompensa, spawn cap real, contraste e avisos.
+
+## M5 review
+- G07: evasão ativa, esteira ±0,12W/s, patrulha central, aviso não só por cor, tempo -2s/rodada documentado; gates de agentes sem perda, ingênuo e rodadas sucessivas, replay com dash/porta.
+- G02: contraste de rivais reforçado; M4R-002 e M4R-003 continuam em issue de alcance/ondas profundas.

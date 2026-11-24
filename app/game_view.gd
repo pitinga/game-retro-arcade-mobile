@@ -437,8 +437,8 @@ func _draw_rally() -> void:
 		var p:=road_point(car.z,model.car_lateral(car))
 		var depth:=clampf(1-float(car.z)/150,0,1)
 		var r:=Vector2(lerpf(7,26,depth),lerpf(5,24,depth))
-		draw_rect(Rect2(p-r/2,r),Color("#F0B680"))
-		draw_rect(Rect2(p-r/2,r),BG,false,1)
+		draw_rect(Rect2(p-r/2,r),Color("#FFE4B2"))
+		draw_rect(Rect2(p-r/2,r),BG,false,2)
 		if float(car.get("warn",0))>0:
 			var arrow:=p+Vector2(signf(float(car.target-car.lane))*maxf(r.x/2,7),-r.y/2)
 			draw_circle(arrow,7,BG)
@@ -555,7 +555,7 @@ func _draw_skyport() -> void:
 	for wall: Rect2 in model.walls:
 		var box:=Rect2(wall.position+shift,wall.size)
 		draw_rect(box,Color("#17243B"))
-		draw_rect(box,Color("#8295B0"),false,2)
+		draw_rect(box,Color("#A9BBD3"),false,2)
 		draw_line(box.position+Vector2(5,7),box.position+Vector2(box.size.x-5,7),Color("#506680"),2)
 	for area: Rect2 in model.maintenance:
 		var box:=Rect2(area.position+shift,area.size)
@@ -572,6 +572,13 @@ func _draw_skyport() -> void:
 	var door: Rect2=model.door_rect()
 	door.position+=shift
 	draw_rect(door,GOLD if model.door_warning else (Color("#F08A99") if model.door_closed else MINT),model.door_closed,2)
+	var door_center:=door.get_center()
+	if model.door_warning:
+		draw_rect(Rect2(door_center-Vector2(10,10),Vector2(20,20)),BG)
+		_txt(door_center+Vector2(-4,6),"!",18,GOLD)
+	elif model.door_closed:
+		draw_line(door.position,door.end,WHITE,2)
+		draw_line(Vector2(door.end.x,door.position.y),Vector2(door.position.x,door.end.y),WHITE,2)
 	for i in range(3):
 		var p: Vector2=model.node(model.ZONES[i])+shift
 		draw_circle(p,22,BG)
