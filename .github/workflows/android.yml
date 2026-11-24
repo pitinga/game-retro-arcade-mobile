@@ -1,4 +1,4 @@
-name: M1 · testes e APK Android
+name: M2 · testes e APK Android
 
 on:
   push:
@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   android:
-    name: Godot 4.7.2 · Foundation
+    name: Godot 4.7.2 · Arcades
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -60,6 +60,9 @@ jobs:
 
       - name: Testar foundation
         run: godot --headless --path . --script res://tests/test_m1.gd
+
+      - name: Testar M2
+        run: godot --headless --path . --script res://tests/test_m2.gd
 
       - name: Capturas reais do shell (desktop Linux virtual)
         run: |
