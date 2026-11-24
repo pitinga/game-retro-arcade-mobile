@@ -159,7 +159,13 @@ func run() -> void:
 		var completed: bool=false
 		var initial_lives:=d.lives
 		for tick in range(72000):
+			var before_lives:=d.lives
+			var before_level:=d.level
+			var before_pos:=d.pos
+			var before_energy:=d.energy
 			result=d.step(agent.deep_input(d),1.0/60,rng)
+			if d.lives<before_lives:
+				print("DEEP LOSS ",mode," level=",before_level," pos=",before_pos," energy=",before_energy)
 			if not result.is_empty():
 				completed=result.get("reason","")=="victory"
 				break
@@ -169,7 +175,15 @@ func run() -> void:
 		initial_lives=e.lives
 		completed=false
 		for tick in range(108000):
+			var before_lives:=e.lives
+			var before_region:=e.region
+			var before_room:=e.room
+			var before_pos:=e.pos
+			var before_patrol:=e.hazard_pos
+			var before_bridge:=e.bridge_x
 			result=e.step(agent.emerald_input(e),1.0/60,rng)
+			if e.lives<before_lives:
+				print("EMERALD LOSS ",mode," region=",before_region," room=",before_room," pos=",before_pos," patrol=",before_patrol," bridge=",before_bridge)
 			if not result.is_empty():
 				completed=result.get("reason","")=="victory"
 				break

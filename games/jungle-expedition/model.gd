@@ -73,7 +73,10 @@ func enter(id: int,x: float) -> void:
 	overhead_pos=Vector2(190,155)
 	bridge_x=gap.get_center().x
 	bridge_previous=bridge_x
-	hazard_pos=Vector2(500,FLOOR-12)
+	var hazard_center: float=140 if gap.size.x>0 and gap.position.x>350 else 450
+	hazard_pos=Vector2(hazard_center+sin(time*1.2)*20,FLOOR-12)
+	if overhead:
+		overhead_pos=Vector2(190+sin(time*1.5)*30,150+sin(time*2.2)*8)
 func count_region() -> int:
 	var total: int=0
 	for id: int in Data.ARTIFACTS:
