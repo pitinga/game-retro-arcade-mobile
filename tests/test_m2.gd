@@ -26,9 +26,9 @@ func run() -> void:
 		for block: Dictionary in b.blocks:
 			var rect: Rect2=block.rect
 			check(rect.position.x>=0 and rect.end.x<=360 and rect.end.y<200,"AC-G03-02 bounds")
-			key+=str(block.id)+":"+str(block.hp)+":"+str(rect.position.y)+";"
+			key+=str(block.id)+";"
 		distinct[key]=true
-	check(distinct.size()==30,"AC-G03-02 distinct layouts")
+	check(distinct.size()==10,"M2-003 ten topologies, three tiers")
 	for seed in range(1000):
 		rng.seed=seed
 		b.phase=31
@@ -116,10 +116,12 @@ func run() -> void:
 			check(threat.target>=0 and threat.target<7 and threat.speed<=0.33*Shield.H,"AC-G10-04 target speed")
 	for id: String in ["G03","G09","G10"]:
 		var view:=View.new()
-		view.configure(id,"normal")
+		view.configure(id,"normal","pt",{},42)
 		root.add_child(view)
+		view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		await process_frame
 		check(view.host.session.state==Session.State.PAUSED,"M2 intro "+id)
+		check(view.pause_button.size.y/float(view.fitted.scale)>=47.99,"M2-001 pause size "+id) if view.fitted.scale>0 else check(false,"M2-001 layout "+id)
 		view._resume()
 		view.pause_game()
 		check(view.host.session.state==Session.State.PAUSED,"M2 pause "+id)

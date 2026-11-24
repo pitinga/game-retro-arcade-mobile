@@ -7,13 +7,21 @@ func snap(name: String) -> bool:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	var image:=root.get_texture().get_image()
-	return image!=null and not image.is_empty() and image.save_png("res://build/screenshots/"+name+".png")==OK
+	if image==null or image.is_empty():
+		return false
+	var palette: Dictionary={}
+	for y in range(0,image.get_height(),4):
+		for x in range(0,image.get_width(),4):
+			palette[image.get_pixel(x,y).to_rgba32()]=true
+			if palette.size()>=12:
+				return image.save_png("res://build/screenshots/"+name+".png")==OK
+	return false
 func run() -> void:
 	for id: String in ["G03","G09","G10"]:
 		for dims: Vector2i in ([Vector2i(360,640),Vector2i(360,800)] if id=="G03" else [Vector2i(640,360),Vector2i(800,360)]):
 			root.size=dims
 			var view:=View.new()
-			view.configure(id,"normal","pt")
+			view.configure(id,"normal","pt",{},42)
 			root.add_child(view)
 			view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			await process_frame

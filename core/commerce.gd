@@ -20,7 +20,9 @@ func begin(now_ms: int) -> void:
 # No grant API is shipped. M7 must implement authenticated receipt verification
 # and replace this disabled gate; tests alone exercise policy states.
 func can_access(id: String) -> bool:
-	return preload("res://core/catalog.gd").can_access(id, SALES_ENABLED and entitlement == Entitlement.PRO)
+	return policy_access(id, SALES_ENABLED, entitlement)
+static func policy_access(id: String,sales_active: bool,status: Entitlement) -> bool:
+	return preload("res://core/catalog.gd").can_access(id,sales_active and status==Entitlement.PRO)
 func record_completed(result_id: String) -> void:
 	if result_id.is_empty() or _seen_results.has(result_id):
 		return

@@ -33,6 +33,92 @@ jobs:
         run: |
           if grep -REn 'apply_verified_result|_entitlement[[:space:]]*=' app core --include='*.gd' | grep -v 'var _entitlement:'; then exit 1; fi
 
+      - name: Verificar isolamento QA
+        run: |
+          grep -Fx '\treturn OS.is_debug_build() and OS.has_feature("qa_arcade")' app/main.gd || grep -Eq '^[[:space:]]*return OS.is_debug_build\(\) and OS.has_feature\("qa_arcade"\) (compatibilidade com Godot Android)
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+
+      - name: Pacotes Android necessários
+        run: sdkmanager 'platform-tools' 'build-tools;36.1.0' 'platforms;android-36' 'cmdline-tools;latest'
+
+      - name: Godot 4.7.2 e export templates
+        uses: chickensoft-games/setup-godot@ac93246ea68518a384c1c280a496e5989341f2f6 # v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+
+      - name: Validar SHA-512 e versão do Godot
+        run: bash .github/scripts/verify-godot.sh
+
+      - name: Importar projeto
+        run: |
+          set -o pipefail
+          timeout 90s godot --headless --path . --editor --import --quit 2>&1 | tee /tmp/import.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Compilation failed' /tmp/import.log; then exit 1; fi
+
+      - name: Testar foundation
+        run: |
+          set -o pipefail
+          timeout 90s godot --headless --path . --script res://tests/test_m1.gd 2>&1 | tee /tmp/test-m1.log
+          grep -Fx 'M1 failures: 0' /tmp/test-m1.log
+          if grep -E 'SCRIPT ERROR|Parse Error' /tmp/test-m1.log; then exit 1; fi
+
+      - name: Testar M2
+        run: |
+          set -o pipefail
+          timeout 90s godot --headless --path . --script res://tests/test_m2.gd 2>&1 | tee /tmp/test-m2.log
+          grep -Fx 'M2 failures: 0' /tmp/test-m2.log
+          if grep -E 'SCRIPT ERROR|Parse Error' /tmp/test-m2.log; then exit 1; fi
+
+      - name: Capturas reais do shell (desktop Linux virtual)
+        run: |
+          mkdir -p build/screenshots
+          timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_shell.gd
+          timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_m2.gd
+          test "$(find build/screenshots -name 'G*-*.png' | wc -l)" -eq 12
+          test "$(find build/screenshots -name '*.png' | wc -l)" -eq 24
+          for f in build/screenshots/*.png; do
+            echo "SCREENSHOT:$(basename "$f"):$(base64 -w0 "$f")"
+          done
+
+      - name: Configurar exportador Android do Godot
+        shell: bash
+        run: |
+          settings_file=$(find "$HOME/.config/godot" -maxdepth 1 -type f -name 'editor_settings-4*.tres' -print -quit)
+          test -n "$settings_file"
+          printf '\nexport/android/android_sdk_path = "%s"\n' "$ANDROID_SDK_ROOT" >> "$settings_file"
+          printf 'export/android/java_sdk_path = "%s"\n' "$JAVA_HOME" >> "$settings_file"
+          keytool -genkeypair -keystore "$RUNNER_TEMP/retro-debug.keystore" -storepass android -keypass android -alias androiddebugkey -keyalg RSA -validity 10000 -dname 'CN=Android Debug,O=Android,C=US'
+
+      - name: Gerar APK único de teste (ARM64)
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ runner.temp }}/retro-debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          mkdir -p build
+          godot --headless --path . --install-android-build-template --export-debug Android build/retro-arcade-debug.apk
+          test -s build/retro-arcade-debug.apk
+
+      - name: Verificar identidade e arquitetura do APK único
+        run: |
+          aapt="$ANDROID_SDK_ROOT/build-tools/36.1.0/aapt"
+          "$aapt" dump badging build/retro-arcade-debug.apk | grep -q "^package: name='com.pitinga.retroarcademobile' "
+          "$aapt" dump badging build/retro-arcade-debug.apk | grep -Fq "native-code: 'arm64-v8a'"
+          "$aapt" dump badging build/retro-arcade-debug.apk | grep -q "application-debuggable"
+          # Nenhum SDK de cobrança/publicidade nesta milestone.
+          if "$aapt" dump permissions build/retro-arcade-debug.apk | grep -E 'com.android.vending.BILLING|android.permission.INTERNET'; then exit 1; fi
+ app/main.gd
+          test "$(grep -RFl 'OS.has_feature("qa_arcade")' app core games --include='*.gd' | wc -l)" -eq 1
+          grep -Fq 'custom_features="retro_arcade,qa_arcade"' export_presets.cfg
+
       - name: Java 17 (compatibilidade com Godot Android)
         uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
         with:
@@ -78,8 +164,10 @@ jobs:
       - name: Capturas reais do shell (desktop Linux virtual)
         run: |
           mkdir -p build/screenshots
-          xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_shell.gd
+          timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_shell.gd
           timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_m2.gd
+          test "$(find build/screenshots -name 'G*-*.png' | wc -l)" -eq 12
+          test "$(find build/screenshots -name '*.png' | wc -l)" -eq 24
           for f in build/screenshots/*.png; do
             echo "SCREENSHOT:$(basename "$f"):$(base64 -w0 "$f")"
           done

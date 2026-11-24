@@ -37,7 +37,11 @@ func begin_wave() -> void:
 	shots.clear()
 	bubbles.clear()
 	for i in range(2):
-		ammo[i]=int([12,10,8][difficulty]) if launchers[i] else 0
+		var active_count:=launchers.count(true)
+		var needed:=remaining+(int(remaining/5.0) if wave>=3 else 0)
+		# One shot per possible threat plus 20% margin, distributed over surviving launchers.
+		var budget:=ceili(float(needed)*1.2/maxi(1,active_count))
+		ammo[i]=maxi(int([12,10,8][difficulty]),budget) if launchers[i] else 0
 func target_alive(target: int) -> bool:
 	return launchers[target] if target<2 else habitats[target-2]
 func spawn_threat(rng: RandomNumberGenerator) -> void:

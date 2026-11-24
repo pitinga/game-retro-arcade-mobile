@@ -7,6 +7,7 @@ var session := Session.new()
 var router := Router.new()
 var fitted: Dictionary = {"rect":Rect2(),"scale":0.0}
 var touch_regions: Dictionary = {}
+var excluded_touch:=Rect2()
 signal paused
 signal finished(result: Dictionary)
 
@@ -44,7 +45,7 @@ func route_touch(pointer: int, point: Vector2, pressed: bool, canceled: bool = f
 	if session.state != Session.State.RUNNING:
 		return
 	var logical: Variant = Layout.logical_point(point,fitted)
-	if logical == null:
+	if logical == null or excluded_touch.has_point(logical):
 		return
 	for action: String in touch_regions:
 		var area: Rect2 = touch_regions[action]
@@ -70,8 +71,7 @@ func _input(event: InputEvent) -> void:
 		route_drag(1000000,event.position)
 	elif event is InputEventKey and not event.echo:
 		if event.keycode == KEY_ESCAPE and event.pressed:
-			pause_game()
-			return
+			return # shell owns Back/escape to avoid double transitions
 		var keys := {KEY_LEFT:"left",KEY_A:"left",KEY_RIGHT:"right",KEY_D:"right",KEY_UP:"up",KEY_W:"up",KEY_DOWN:"down",KEY_S:"down",KEY_SPACE:"fire",KEY_Z:"action",KEY_X:"secondary"}
 		if keys.has(event.keycode) and session.state == Session.State.RUNNING:
 			# keyboard keys own distinct pointers, allowing aliases to overlap
@@ -81,7 +81,7 @@ func _input(event: InputEvent) -> void:
 			else:
 				router.release(owner)
 func _notification(what: int) -> void:
-	if what in [NOTIFICATION_APPLICATION_PAUSED,NOTIFICATION_APPLICATION_FOCUS_OUT,NOTIFICATION_WM_GO_BACK_REQUEST]:
+	if what in [NOTIFICATION_APPLICATION_PAUSED,NOTIFICATION_APPLICATION_FOCUS_OUT]:
 		pause_game()
 func _exit_tree() -> void:
 	router.clear()

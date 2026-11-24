@@ -22,16 +22,24 @@ var overlay: VBoxContainer
 var fitted: Dictionary={}
 var landscape: bool=false
 var _complete: bool=false
+var run_seed: int=0
+var best_score: int=0
+var control_size: float=1.0
+var overlay_kind: String=""
+var _qa_record: bool=false
 signal exit_requested
 signal restart_requested
 signal completed(result: Dictionary)
-func configure(id: String,level: String,locale: String="pt",prefs: Dictionary={}) -> void:
+func configure(id: String,level: String,locale: String="pt",prefs: Dictionary={},seed_value: int=0) -> void:
 	game_id=id
 	difficulty=level
 	language=locale
 	left_handed=bool(prefs.get("left_handed",false))
 	control_opacity=clampf(float(prefs.get("control_opacity",100))/100.0,0.5,1.0)
-	landscape=id!="G03"
+	landscape=id in ["G09","G10"]
+	run_seed=seed_value if seed_value!=0 else Time.get_ticks_usec()
+	best_score=int(prefs.get("best_score",0))
+	control_size=clampf(float(prefs.get("control_size",100))/100.0,0.5,1.5)
 func t(pt: String,en: String) -> String:
 	return en if language=="en" else pt
 func _ready() -> void:
@@ -44,7 +52,7 @@ func _ready() -> void:
 		_: return
 	host=Host.new()
 	add_child(host)
-	host.configure(model,Time.get_ticks_usec(),difficulty)
+	host.configure(model,run_seed,difficulty)
 	host.paused.connect(_on_paused)
 	host.finished.connect(_on_result)
 	pause_button=Button.new()
@@ -78,12 +86,20 @@ func _layout() -> void:
 				controls={"left":Rect2(0,296,62,64),"right":Rect2(62,296,62,64),"up":Rect2(124,296,124,64),"fire":Rect2(392,296,120,64),"secondary":Rect2(512,296,128,64)}
 		"G10":
 			controls={"aim":Rect2(0,48,640,278)}
+	# Size preference adjusts button height inside reserved bands, never below 48u.
+	for action: String in controls:
+		if action in ["aim","paddle"]:
+			continue
+		var area: Rect2=controls[action]
+		var height:=clampf(area.size.y*control_size,48.0,area.size.y)
+		controls[action]=Rect2(area.position+Vector2(0,(area.size.y-height)/2),Vector2(area.size.x,height))
 	host.configure_layout(safe,landscape,controls)
 	var rect: Rect2=fitted.rect
 	var scale: float=fitted.scale
 	var logical_w: float=640 if landscape else 360
-	pause_button.position=rect.position+Vector2(logical_w-58,4)*scale
-	pause_button.size=Vector2(54,40 if landscape else 54)*scale
+	pause_button.position=rect.position+Vector2(logical_w-64,8)*scale
+	pause_button.size=Vector2(56,48)*scale
+	host.excluded_touch=Rect2(logical_w-64,8,56,48)
 	if is_instance_valid(overlay):
 		_place_overlay()
 	queue_redraw()
@@ -118,6 +134,7 @@ func _overlay(title: String,actions: Array) -> void:
 	queue_redraw()
 func _show_intro() -> void:
 	host.pause_game()
+	overlay_kind="intro"
 	var message:=t("Arraste a raquete. Toque SERVIR.","Drag the paddle. Tap SERVE.")
 	if game_id=="G09":
 		message=t("Gire, acelere, dispare e use DASH.","Rotate, thrust, shoot and DASH.")
@@ -128,21 +145,38 @@ func pause_game() -> void:
 	if is_instance_valid(host):
 		host.pause_game()
 func _on_paused() -> void:
+	overlay_kind="pause"
 	_overlay(t("PAUSA","PAUSED"),[[t("Continuar","Resume"),_resume],[t("Reiniciar","Restart"),_confirm_restart],[t("Catálogo","Catalogue"),_confirm_exit]])
 func _resume() -> void:
+	overlay_kind=""
 	_clear_overlay()
 	host.resume_game()
 func _confirm_restart() -> void:
+	overlay_kind="confirm"
 	_overlay(t("Reiniciar a partida?","Restart game?"),[[t("Confirmar","Confirm"),func(): restart_requested.emit()],[t("Cancelar","Cancel"),_on_paused]])
 func _confirm_exit() -> void:
+	overlay_kind="confirm"
 	_overlay(t("Abandonar a partida?","Leave game?"),[[t("Confirmar","Confirm"),func(): exit_requested.emit()],[t("Cancelar","Cancel"),_on_paused]])
+func back() -> void:
+	if _complete:
+		exit_requested.emit()
+	elif overlay_kind=="confirm":
+		_on_paused()
+	elif overlay_kind in ["intro","pause"]:
+		_confirm_exit()
+	else:
+		pause_game()
 func _on_result(result: Dictionary) -> void:
 	if _complete:
 		return
 	_complete=true
 	pause_button.disabled=true
+	result["seed"]=run_seed
+	best_score=maxi(best_score,int(result.get("score",0)))
 	completed.emit(result)
-	_overlay(t("FIM DE JOGO","GAME OVER")+"\n"+t("Pontos: ","Score: ")+str(result.get("score",0)),[[t("Repetir","Play again"),func(): restart_requested.emit()],[t("Catálogo","Catalogue"),func(): exit_requested.emit()]])
+	overlay_kind="result"
+	var reason:=t("Derrota","Defeat") if result.get("reason","lost")=="lost" else str(result.get("reason",""))
+	_overlay(t("FIM DE JOGO","GAME OVER")+"\n"+reason+" · "+t("Pontos: ","Score: ")+str(result.get("score",0))+"\n"+t("Recorde: ","Best: ")+str(best_score)+"\nSeed: "+str(run_seed),[[t("Repetir","Play again"),func(): restart_requested.emit()],[t("Catálogo","Catalogue"),func(): exit_requested.emit()]])
 func _process(_delta: float) -> void:
 	queue_redraw()
 func _txt(pos: Vector2,value: String,sz: int=16,color: Color=WHITE) -> void:
@@ -190,8 +224,8 @@ func _draw_brick() -> void:
 	for drop: Dictionary in model.drops:
 		draw_circle(Vector2(drop.pos)+shift,7,GOLD)
 		_txt(Vector2(drop.pos)+shift+Vector2(-4,4),"+" if drop.kind==0 else "S",12,BG)
-	_control(Rect2(0,528,360,56),t("←  ARRASTE  →","←  DRAG  →"))
-	_control(Rect2(0,584,360,56),t("SERVIR","SERVE"))
+	_control(Rect2(0,528,360,56),t("<  ARRASTE  >","<  DRAG  >"))
+	_control(host.touch_regions["fire"],t("SERVIR","SERVE"))
 	if model.serving:
 		_txt(Vector2(112,330),t("PRONTO?","READY?"),22,MINT)
 func _draw_orbit() -> void:
@@ -222,8 +256,13 @@ func _draw_orbit() -> void:
 					draw_colored_polygon(PackedVector2Array([point+forward*13,point-forward*8+right*8,point-forward*4,point-forward*8-right*8]),MINT)
 					if model.immune>0:
 						draw_arc(point,16,0,TAU,24,WHITE,1)
+	# Mask any wrapped copies crossing the field boundary, then repaint HUD.
+	draw_rect(Rect2(0,0,640,48),BG)
+	draw_rect(Rect2(0,296,640,64),BG)
+	_txt(Vector2(12,19),"ORBIT SHARDS",17,MINT)
+	_txt(Vector2(12,39),"%06d  %s %d   %s %d   DASH %.1f"%[model.score,t("ONDA","WAVE"),model.wave,t("VIDAS","LIVES"),model.lives,model.dash_cd],14)
 	for key: String in host.touch_regions:
-		var label: String={"left":"↶","right":"↷","up":t("PROPULSÃO","THRUST"),"fire":t("TIRO","FIRE"),"secondary":"DASH"}[key]
+		var label: String={"left":"<","right":">","up":t("PROPULSÃO","THRUST"),"fire":t("TIRO","FIRE"),"secondary":"DASH"}[key]
 		_control(host.touch_regions[key],label)
 	if model.wave_wait>=0:
 		_txt(Vector2(245,175),t("PRÓXIMA ONDA","NEXT WAVE"),20,GOLD)
@@ -254,7 +293,7 @@ func _draw_shield() -> void:
 			draw_line(p+Vector2(10,-17),p-Vector2(10,1),WHITE,2)
 	for threat: Dictionary in model.threats:
 		var p:=Vector2(threat.pos)+shift
-		draw_line(Vector2(threat.start)+shift,p,Color("#704D5C"),1)
+		draw_line(Vector2(threat.start)+shift,p,Color("#C28E9E"),2)
 		draw_circle(p,4 if threat.fragment else 3,Color("#FF9B72"))
 		if threat.fragment:
 			draw_arc(p,7,0,TAU,12,GOLD,1)

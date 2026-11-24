@@ -42,7 +42,7 @@ func build_level(rng: RandomNumberGenerator) -> void:
 	slow_timer=0
 	drop_cooldown=0
 	destroyed=0
-	speed=base_speed()
+	speed=minf(base_speed()+0.08*H*mini(2,int((phase-1)/10.0)),1.5*H)
 	var pattern: int=(phase-1)%10 if phase<=30 else rng.randi_range(0,9)
 	var tier: int=mini(2,int((phase-1)/10.0))
 	for row in range(6):
