@@ -106,3 +106,6 @@ AC-G10-04: 1000 seeds/ondas representativas validadas quanto à interceptabilida
 - Vídeo Activision localizado; timestamps acima são pontos de acesso, não análise quadro a quadro. Para G03/G09/G10, usar manuais e localizar gameplay autorizado específico antes do playtest; registrar URL/timecode, data, observações abstratas, lacunas. Não copiar screenshots para repo.
 - Para cada jogo, documentar em docs/research/<id>.md evidência de 3 cenários observados (início, progressão, derrota), com distinção FATO DOCUMENTADO / OBSERVAÇÃO / PROPOSTA. Nunca preencher valores históricos sem fonte.
 - Parâmetros são baseline original, solver e benchmark ainda não executados; critérios não podem ser marcados como aprovados sem evidência. GDD não concede autorização legal nem afirma equivalência de gameplay.
+
+### Review M4 — ajustes normativos
+G04: cápsula rasa 0,30–0,38H, inimigos >=0,56H, zona morta analógica 8u; bônus +150 exclusivamente carga cheia. G05: prazo por fase max(24,50−3×(fase−1)) s, restaura no checkpoint; fase 2+ rajada a cada 5s, aviso 1s, 2s ativa desloca aterrissagem 46u; stick direcional permite diagonais, teclado preservado. Assistência de alvo mantida, tempo e vento impõem risco. M3: morte restaura escolha de farol sem repetir bônus.

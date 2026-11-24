@@ -95,9 +95,9 @@ func _layout() -> void:
 			if left_handed:
 				controls={"stick":Rect2(360,296,280,64),"fire":Rect2(0,296,240,64)}
 		"G05":
-			controls={"left":Rect2(0,296,64,64),"up":Rect2(64,296,64,64),"down":Rect2(128,296,64,64),"right":Rect2(192,296,64,64),"fire":Rect2(368,296,136,64),"action":Rect2(504,296,136,64)}
+			controls={"stick":Rect2(0,296,256,64),"fire":Rect2(368,296,136,64),"action":Rect2(504,296,136,64)}
 			if left_handed:
-				controls={"left":Rect2(384,296,64,64),"up":Rect2(448,296,64,64),"down":Rect2(512,296,64,64),"right":Rect2(576,296,64,64),"fire":Rect2(0,296,136,64),"action":Rect2(136,296,136,64)}
+				controls={"stick":Rect2(384,296,256,64),"fire":Rect2(0,296,136,64),"action":Rect2(136,296,136,64)}
 		"G09":
 			if left_handed:
 				controls={"left":Rect2(392,296,62,64),"right":Rect2(454,296,62,64),"up":Rect2(516,296,124,64),"fire":Rect2(0,296,120,64),"secondary":Rect2(120,296,120,64)}
@@ -406,14 +406,14 @@ func _draw_rally() -> void:
 	_txt(Vector2(12,22),"HORIZON RALLY",18,MINT)
 	_txt(Vector2(12,45),"D%02d  %02d/%02d  %03d km/h"%[model.day,model.passes,model.goal,int(model.speed*3.6)],14)
 	var sky: Color=[Color("#5FA9C7"),Color("#BC7774"),Color("#202A49"),Color("#C5A08C")][model.phase()]
-	var land: Color=Color("#152B22") if model.phase()!=2 else Color("#10201E")
+	var land: Color=Color("#0B1711") if model.phase()!=2 else Color("#081210")
 	draw_rect(Rect2(0,64,360,130),sky)
 	draw_rect(Rect2(0,194,360,334),land)
 	for i in range(30):
 		var far_z:=150-float(i)*5
 		var near_z:=far_z-5
 		var quad:=PackedVector2Array([road_point(far_z,-1),road_point(far_z,1),road_point(near_z,1),road_point(near_z,-1)])
-		draw_colored_polygon(quad,Color("#3F4B61") if i%2==0 else Color("#46536B"))
+		draw_colored_polygon(quad,Color("#66758C") if i%2==0 else Color("#728098"))
 		for line: float in [-1.0,1.0]:
 			draw_line(road_point(far_z,line),road_point(near_z,line),WHITE,2)
 		if int((model.distance+near_z)/8)%2==0:
@@ -430,7 +430,9 @@ func _draw_rally() -> void:
 		draw_rect(Rect2(p-r/2,r),Color("#F0B680"))
 		draw_rect(Rect2(p-r/2,r),BG,false,1)
 		if float(car.get("warn",0))>0:
-			draw_circle(p+Vector2(signf(float(car.target-car.lane))*r.x/2,-r.y/2),3,GOLD)
+			var arrow:=p+Vector2(signf(float(car.target-car.lane))*maxf(r.x/2,7),-r.y/2)
+			draw_circle(arrow,7,BG)
+			_txt(arrow+Vector2(-4,4),">" if car.target>car.lane else "<",12,WHITE)
 		draw_rect(Rect2(p-r/2+Vector2(2,r.y-4),Vector2(3,3)),Color("#FF4E70"))
 		draw_rect(Rect2(p+r/2-Vector2(5,4),Vector2(3,3)),Color("#FF4E70"))
 	var player:=road_point(0,model.lateral)
@@ -441,9 +443,9 @@ func _draw_rally() -> void:
 	_txt(Vector2(14,88),"%s %02ds  HP %d"%[t("TEMPO","TIME"),int(ceil(90-model.elapsed)),model.integrity],14)
 	_txt(Vector2(14,108),t("DESVIE DO TRÁFEGO","AVOID TRAFFIC"),13,GOLD)
 	if model.elapsed>=model.weather_start-3 and model.elapsed<model.weather_start:
-		_txt(Vector2(230,88),t("NEBLINA EM BREVE","FOG SOON"),11,GOLD)
+		_txt(Vector2(230,88),t("NEBLINA LOGO","FOG SOON"),14,GOLD)
 	elif model.elapsed>=model.weather_start+7 and model.elapsed<model.weather_start+10:
-		_txt(Vector2(230,88),t("GELO EM BREVE","ICE SOON"),11,GOLD)
+		_txt(Vector2(230,88),t("GELO LOGO","ICE SOON"),14,GOLD)
 	if model.fog:
 		draw_rect(Rect2(0,194,360,315),Color(0.75,0.85,0.9,0.19))
 		_txt(Vector2(230,88),t("NEBLINA","FOG"),14,GOLD)
@@ -507,14 +509,22 @@ func _draw_polar() -> void:
 		var p: Vector2=model.stations[i]+shift
 		draw_circle(p,31,Color("#E3F1F5"))
 		draw_arc(p,31,0,TAU,32,Color("#15243D"),3)
-		draw_rect(Rect2(p-Vector2(13,12),Vector2(26,24)),MINT if model.repaired[i] else GOLD)
-		_txt(p+Vector2(-5,5),str(i+1),16,BG)
+		draw_rect(Rect2(p-Vector2(15,14),Vector2(30,28)),Color("#15243D"))
+		if model.repaired[i]:
+			draw_line(p+Vector2(-9,0),p+Vector2(-3,7),MINT,3)
+			draw_line(p+Vector2(-3,7),p+Vector2(10,-8),MINT,3)
+		else:
+			_txt(p+Vector2(-4,6),"!",18,GOLD)
+		_txt(p+Vector2(-26,45),str(i+1)+" "+(t("OK","OK") if model.repaired[i] else t("PEND","WAIT")),12,WHITE)
 		if model.repair_index==i:
 			draw_arc(p,35,-PI/2,-PI/2+TAU*model.repair_time,24,MINT,3)
 	for drone: Dictionary in model.drones:
 		var p: Vector2=drone.pos+shift
 		draw_circle(p,9,Color("#FF9B72"))
 		draw_arc(p,10,0,TAU,16,WHITE,2)
+	_txt(Vector2(12,69),"%02ds"%int(ceil(model.remaining)),16,WHITE)
+	if model.gust or model.gust_warning:
+		_txt(Vector2(220,69),t("RAJADA: AGUARDE","GUST: WAIT") if model.gust else t("RAJADA EM BREVE","GUST SOON"),16,GOLD)
 	var p: Vector2=model.pos+shift
 	if model.jump_left<=0:
 		var target: Vector2=model.target_in_direction()+shift
@@ -524,5 +534,5 @@ func _draw_polar() -> void:
 	draw_arc(p,10,0,TAU,20,WHITE,2)
 	draw_rect(Rect2(p-Vector2(4,6),Vector2(8,8)),MINT)
 	for key: String in host.touch_regions:
-		var label: String={"left":"<","right":">","up":"^","down":"v","fire":t("SALTO","JUMP"),"action":t("REPARAR","REPAIR")}[key]
+		var label: String={"stick":t("DIREÇÃO","STEER"),"fire":t("SALTO","JUMP"),"action":t("REPARAR","REPAIR")}[key]
 		_control(host.touch_regions[key],label)

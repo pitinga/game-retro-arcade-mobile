@@ -107,16 +107,19 @@ func collect(o: Dictionary) -> void:
 			points(20)
 	elif o.kind=="beacon" and route==0:
 		route=int(o.side)
-		points(60 if route<0 else 90)
+		if not rewarded.has(-1):
+			rewarded[-1]=true
+			points(60 if route<0 else 90)
 		# Choice changes scroll/energy tradeoff over remainder of sector.
 func lose() -> Dictionary:
 	lives-=1
 	damage=true
 	if lives<=0:
 		return {"score":score,"progress":sector,"reason":"lost"}
-	# Same sector checkpoint, restore cells without awarding their points twice.
+	# Same sector checkpoint, restore cells and choice without awarding points twice.
+	route=0
 	for o: Dictionary in objects:
-		if o.kind=="energy":
+		if o.kind in ["energy","beacon"]:
 			consumed.erase(o.id)
 	distance=0
 	elapsed=0

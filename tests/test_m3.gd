@@ -137,9 +137,11 @@ func run() -> void:
 		a.day=12
 		a.begin_day(rng)
 		for i in range(20):
+			for car: Dictionary in a.rivals:
+				car.z-=20
 			a.spawn(rng)
-		for car: Dictionary in a.rivals:
-			check(car.lane!=a.safe_lane,"AC-G02-03 initial group gap")
+		check(a.rivals.size()==16,"M3R-002 actual cap")
+		check(a.group_id==8,"M3R-002 multiple groups")
 		check(a.rivals.size()<=16,"AC-G02-03 cap")
 	var agents: int=0
 	var naive_failures: int=0

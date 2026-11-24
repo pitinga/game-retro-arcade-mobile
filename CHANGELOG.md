@@ -4,3 +4,8 @@
 - G02: tráfego em pares, lacuna móvel, aviso 1s, velocidade por jornada 45–125 km/h, largada parada, aviso de clima. Agente deve superar meta +25%; agente imóvel deve falhar.
 - G10: munição mínima 12/10/8 por lançador, orçamento de ameaças potenciais +20%, bônus por munição restante preservado; gate de 36/36 sem perda.
 - Replay por bytes, controles com área variável, back da preparação.
+
+## M4 review
+- G04: zona morta 8u, corredor raso separado dos inimigos, bônus apenas carga cheia.
+- G05: prazo e rajada sinalizada, símbolos e rótulos distintos, stick direcional.
+- M3 residual: reset de rota sem duplicar recompensa, spawn cap real, contraste e avisos.

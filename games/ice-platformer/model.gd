@@ -24,6 +24,9 @@ var buffer: float=0
 var repair_time: float=0
 var repair_index: int=-1
 var phase_angle: float=0
+var remaining: float=50
+var gust: bool=false
+var gust_warning: bool=false
 func create(rng: RandomNumberGenerator,level: String) -> void:
 	difficulty=["easy","normal","hard"].find(level)
 	score=0
@@ -32,6 +35,10 @@ func create(rng: RandomNumberGenerator,level: String) -> void:
 	setup(rng)
 func setup(rng: RandomNumberGenerator) -> void:
 	time=0
+	remaining=maxf(24,50-3*(phase-1))
+	gust=false
+	gust_warning=false
+	direction=Vector2.UP
 	phase_angle=rng.randf_range(0,TAU)
 	repaired=[false,false,false]
 	checkpoint=0
@@ -59,7 +66,9 @@ func update_platforms(dt: float) -> void:
 		p.pos=stations[p.station]+Vector2(cos(p.angle)*83,sin(p.angle)*56)
 # Directional jump assistance predicts moving platforms at landing time.
 func target_in_direction() -> Vector2:
-	var best:=pos+direction*0.20*W
+	return target_for(direction)
+func target_for(dir: Vector2) -> Vector2:
+	var best:=pos+dir*0.20*W
 	var best_distance: float=INF
 	var angular:=float([0.12,0.17,0.22][difficulty])*W/75
 	var candidates: Array[Vector2]=stations.duplicate()
@@ -69,7 +78,7 @@ func target_in_direction() -> Vector2:
 	for candidate: Vector2 in candidates:
 		var delta:=candidate-pos
 		var distance:=delta.length()
-		if distance<30 or distance>0.20*W or delta.normalized().dot(direction)<0.78:
+		if distance<30 or distance>0.20*W or delta.normalized().dot(dir)<0.78:
 			continue
 		var cost:=absf(0.20*W-distance)+(1-delta.normalized().dot(direction))*100
 		if cost<best_distance:
@@ -92,6 +101,7 @@ func lose() -> Dictionary:
 	if lives<=0:
 		return {"score":score,"progress":phase,"reason":"lost"}
 	pos=stations[checkpoint]
+	remaining=maxf(24,50-3*(phase-1))
 	energy=100
 	support=-1
 	jump_left=0
@@ -101,8 +111,18 @@ func lose() -> Dictionary:
 	return {}
 func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 	time+=dt
+	remaining=maxf(0,remaining-dt)
+	if remaining<=0:
+		return lose()
+	gust=phase>=2 and fposmod(time,5.0)>=3.0
+	gust_warning=phase>=2 and fposmod(time,5.0)>=2.0 and not gust
 	update_platforms(dt)
 	var axis:=Vector2(float(int(input.get("right",false))-int(input.get("left",false))),float(int(input.get("down",false))-int(input.get("up",false))))
+	var analog: Dictionary=input.get("analog",{})
+	if analog.has("stick"):
+		axis=Vector2(analog.stick.delta)
+		if axis.length()<8:
+			axis=Vector2.ZERO
 	if axis.length()>0:
 		direction=axis.normalized()
 	if input.get("pressed",{}).has("fire"):
@@ -113,8 +133,8 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 		if buffer>0:
 			jump_from=pos
 			jump_to=target_in_direction()
-			if phase>=2:
-				jump_to.x=clampf(jump_to.x+sin(time)*8,R,W-R)
+			if gust:
+				jump_to.y=clampf(jump_to.y+46,R,H-R)
 			jump_left=JUMP
 			support=-1
 			buffer=0

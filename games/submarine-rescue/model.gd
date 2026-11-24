@@ -48,7 +48,11 @@ func reset_vehicle() -> void:
 func add_capsule(rng: RandomNumberGenerator) -> void:
 	next_id+=1
 	# Reserve a shallow rescue route; other capsules offer deeper risk.
-	var p:=Vector2(rng.randf_range(0.16,0.84)*W,rng.randf_range(0.32,0.44)*H if capsules.is_empty() else rng.randf_range(0.45,0.86)*H)
+	var shallow: bool=true
+	for c: Dictionary in capsules:
+		if c.pos.y<=0.40*H:
+			shallow=false
+	var p:=Vector2(rng.randf_range(0.16,0.84)*W,rng.randf_range(0.30,0.38)*H if shallow else rng.randf_range(0.48,0.86)*H)
 	for c: Dictionary in capsules:
 		if Vector2(c.pos).distance_to(p)<28:
 			return
@@ -60,7 +64,7 @@ func setup_wave(rng: RandomNumberGenerator) -> void:
 	for i in range(6):
 		add_capsule(rng)
 	for i in range(mini(8,3+int(wave/2.0))):
-		var p:=Vector2(rng.randf_range(0.08,0.92)*W,rng.randf_range(0.52,0.88)*H)
+		var p:=Vector2(rng.randf_range(0.08,0.92)*W,rng.randf_range(0.56,0.88)*H)
 		if absf(p.x-pos.x)<0.20*W:
 			p.x=0.10*W if pos.x>W/2 else 0.90*W
 		enemies.append({"pos":p,"vx":rng.randf_range(35,75)*(-1 if i%2==0 else 1),"kind":i%2})
@@ -84,7 +88,8 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 	var axis:=Vector2(float(int(input.get("right",false))-int(input.get("left",false))),float(int(input.get("down",false))-int(input.get("up",false))))
 	var analog: Dictionary=input.get("analog",{})
 	if analog.has("stick"):
-		axis=Vector2(analog.stick.delta)/38.0
+		var delta: Vector2=analog.stick.delta
+		axis=Vector2.ZERO if delta.length()<=8 else delta.normalized()*clampf((delta.length()-8)/30,0,1)
 	axis=axis.limit_length(1.0)
 	velocity=axis*Vector2(0.48*W,0.65*H)
 	if absf(axis.x)>0.05:
@@ -96,7 +101,7 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 	if surface and absf(velocity.x)<=0.05*W and absf(velocity.y)<=0.05*H:
 		oxygen=minf(100,oxygen+35*dt)
 		if cargo>0:
-			score+=200*cargo+150
+			score+=200*cargo+(150 if cargo==capacity() else 0)
 			delivered+=cargo
 			cargo=0
 			if delivered>=goal():
