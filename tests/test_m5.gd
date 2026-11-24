@@ -58,6 +58,22 @@ func run() -> void:
 	m.step({"pressed":{"secondary":Vector2.ZERO}},1.0/60,rng)
 	check(m.dash_cd<5 and m.dash_left<0.25,"AC-G07-03 no double dash")
 	m.create(rng,"normal")
+	m.player=Vector2(545,213)
+	m.drones=[{"pos":m.player,"phase":0.0,"row":2}]
+	var timer:=m.remaining
+	m.step({},1.0/60,rng)
+	check(m.stun>0 and m.immune>0 and timer-m.remaining>5,"AC-G07-03 drone penalty")
+	timer=m.remaining
+	m.step({},1.0/60,rng)
+	check(timer-m.remaining<0.1,"AC-G07-03 i-frame single penalty")
+	m.create(rng,"normal")
+	m.remaining=5
+	m.robot_to=m.exit_id
+	m.robot=m.node(m.exit_id)
+	lives=m.lives
+	m.step({},1.0/60,rng)
+	check(m.lives==lives-1 and m.score==0,"AC-G07-04 escape")
+	m.create(rng,"normal")
 	m.door_closed=true
 	for seed in range(1000):
 		rng.seed=seed
