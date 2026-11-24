@@ -107,7 +107,7 @@ func run() -> void:
 		if m.round>1 and m.lives==initial_lives:
 			ok+=1
 		print("SKYPORT AGENT seed=",seed," round=",m.round," lives=",m.lives)
-			rng.seed=seed
+		rng.seed=seed
 		m.create(rng,["easy","normal","hard"][seed%3])
 		initial_lives=m.lives
 		var naive:=Agent.new()
@@ -169,7 +169,6 @@ func run() -> void:
 		saw_door=saw_door or s.model.door_closed
 		if s.state!=Session.State.RUNNING:
 			break
-	check(s.model.round>1 and s.model.score>0,"M5 replay meaningful capture")
 	check(s.model.round>1 and s.model.score>0,"M5-003 real replay capture")
 	check(saw_dash and saw_door,"M5-003 replay dash and door")
 	var hash:=replay(60,tape)
