@@ -136,8 +136,8 @@ jobs:
           timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_m4.gd
           timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_m5.gd
           timeout 90s xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_m6.gd
-          test "$(find build/screenshots -name 'G*-*.png' | wc -l)" -eq 42
-          test "$(find build/screenshots -name '*.png' | wc -l)" -eq 54
+          test "$(find build/screenshots -name 'G*-*.png' | wc -l)" -eq 54
+          test "$(find build/screenshots -name '*.png' | wc -l)" -eq 66
           for f in build/screenshots/*.png; do
             echo "SCREENSHOT:$(basename "$f"):$(base64 -w0 "$f")"
           done

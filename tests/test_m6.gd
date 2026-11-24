@@ -36,6 +36,12 @@ func replay(script: GDScript,fps: int,tape: Array[Dictionary]) -> String:
 			s.advance(1.0/fps)
 	return hash_state(s)
 func run() -> void:
+	check(DeepData.LEVELS.size()==20,"M6-003 twenty maps")
+	check(EmeraldData.ROOMS.size()==24,"M6-003 twenty-four rooms")
+	var distinct: Dictionary={}
+	for rows: Array in DeepData.LEVELS:
+		distinct[str(rows)]=true
+	check(distinct.size()==20,"M6-003 distinct maps")
 	var d:=DeepModel.new()
 	var e:=EmeraldModel.new()
 	for mode: String in ["easy","normal","hard"]:
@@ -54,6 +60,8 @@ func run() -> void:
 			check(starts==1 and rescues==1,"M6-003 unique start/rescue")
 			for cell: Vector2i in d.hazards:
 				check(not Rect2(Vector2(cell)*24,Vector2.ONE*24).intersects(d.hitbox(d.scientist)) and d.center(cell).distance_to(d.scientist)>=40,"M6-008 rescue clearance")
+			for cell: Vector2i in d.batteries:
+				check(not d.solid(d.center(cell)),"M6-003 battery clear of solid")
 			var gates: int=0
 			for cell: Vector2i in d.cells:
 				if d.cells[cell]=="B" and d.cells.has(Vector2i(cell.x,0)):

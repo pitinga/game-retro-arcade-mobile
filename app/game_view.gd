@@ -226,8 +226,9 @@ func _on_result(result: Dictionary) -> void:
 	best_score=maxi(best_score,int(result.get("score",0)))
 	completed.emit(result)
 	overlay_kind="result"
-	var reason:=t("Derrota","Defeat") if result.get("reason","lost")=="lost" else str(result.get("reason",""))
-	_overlay(t("FIM DE JOGO","GAME OVER")+"\n"+reason+" · "+t("Pontos: ","Score: ")+str(result.get("score",0))+"\n"+t("Recorde: ","Best: ")+str(best_score)+"\nSeed: "+str(run_seed),[[t("Repetir","Play again"),func(): restart_requested.emit()],[t("Catálogo","Catalogue"),func(): exit_requested.emit()]])
+	var won: bool=result.get("reason","")=="victory"
+	var reason:=t("Vitória","Victory") if won else (t("Derrota","Defeat") if result.get("reason","lost")=="lost" else str(result.get("reason","")))
+	_overlay((t("VITÓRIA","VICTORY") if won else t("FIM DE JOGO","GAME OVER"))+"\n"+reason+" · "+t("Pontos: ","Score: ")+str(result.get("score",0))+"\n"+t("Recorde: ","Best: ")+str(best_score)+"\nSeed: "+str(run_seed),[[t("Repetir","Play again"),func(): restart_requested.emit()],[t("Catálogo","Catalogue"),func(): exit_requested.emit()]])
 func _process(_delta: float) -> void:
 	queue_redraw()
 func _txt(pos: Vector2,value: String,sz: int=16,color: Color=WHITE) -> void:
