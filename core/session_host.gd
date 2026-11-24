@@ -64,6 +64,10 @@ func _input(event: InputEvent) -> void:
 		route_touch(event.index,event.position,event.pressed,event.canceled)
 	elif event is InputEventScreenDrag:
 		route_drag(event.index,event.position)
+	elif not OS.has_feature("android") and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		route_touch(1000000,event.position,event.pressed)
+	elif not OS.has_feature("android") and event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT)!=0:
+		route_drag(1000000,event.position)
 	elif event is InputEventKey and not event.echo:
 		if event.keycode == KEY_ESCAPE and event.pressed:
 			pause_game()
