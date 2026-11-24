@@ -6,6 +6,7 @@ Coletânea mobile de 10 arcades originais inspirados em mecânicas clássicas. F
 
 | Documento | Conteúdo |
 |---|---|
+| [Nomes de exibição](docs/DISPLAY-NAMES.md) | Nomes aprovados para o protótipo, IDs estáveis e gate de marca |
 | [GDD geral](docs/GDD.md) | Produto, catálogo, monetização, UX, arquitetura, acessibilidade, propriedade intelectual, roadmap |
 | [GDD dos dez jogos](docs/GDD-GAMES.md) | Regras, controles, física, progressão, pontuação, parâmetros, fontes históricas e 40 critérios de aceitação |
 | [Resumo visual](docs/VISUAL-CONCEPTS.md) | Esboços textuais originais de menu e gameplay dos 10 jogos, paletas, HUD e inventário de assets |

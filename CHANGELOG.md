@@ -13,3 +13,8 @@
 ## M5 review
 - G07: evasão ativa, esteira ±0,12W/s, patrulha central, aviso não só por cor, tempo -2s/rodada documentado; gates de agentes sem perda, ingênuo e rodadas sucessivas, replay com dash/porta.
 - G02: contraste de rivais reforçado; M4R-002 e M4R-003 continuam em issue de alcance/ondas profundas.
+
+## M6 review (candidate)
+- G06 vertical alternatives, moving enemies, energy and pulse costs, rescue clearance and accessible hazard states.
+- G08 wider gaps, bridge, artifact variety, overhead hazards, timed ladder and checkpoint.
+- Stronger campaign/replay gates and labeled additional visual fixtures. Pending CI and review.
