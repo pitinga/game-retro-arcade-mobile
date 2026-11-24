@@ -26,7 +26,6 @@ var run_seed: int=0
 var best_score: int=0
 var control_size: float=1.0
 var overlay_kind: String=""
-var _qa_record: bool=false
 signal exit_requested
 signal restart_requested
 signal completed(result: Dictionary)

@@ -5,6 +5,7 @@ const Shield=preload("res://games/missile-defense/model.gd")
 const Session=preload("res://core/session.gd")
 const Geo=preload("res://core/geometry.gd")
 const View=preload("res://app/game_view.gd")
+const Commerce=preload("res://core/commerce.gd")
 var failures: int=0
 var rng:=RandomNumberGenerator.new()
 func check(ok: bool,label: String) -> void:
@@ -13,7 +14,31 @@ func check(ok: bool,label: String) -> void:
 		push_error(label)
 func _initialize() -> void:
 	call_deferred("run")
+func state_hash(session: RefCounted) -> String:
+	var fields: Dictionary={}
+	for prop: Dictionary in session.model.get_property_list():
+		if int(prop.usage)&PROPERTY_USAGE_SCRIPT_VARIABLE:
+			fields[prop.name]=session.model.get(prop.name)
+	return str([session.tick,session.rng.state,fields,session.get_result()]).sha256_text()
+func replay(script: GDScript,_id: String,fps: int) -> String:
+	var s:=Session.new()
+	s.configure(script.new(),12345,"normal")
+	s.start()
+	for frame in range(fps*10):
+		var input: Dictionary={"right":true,"up":true,"fire":true}
+		# Input changes at exactly the same simulation tick on every render rate.
+		if frame==fps+(1 if fps==120 else 0):
+			input["pressed"]={"fire":Vector2.ZERO,"aim":Vector2(180,160),"secondary":Vector2.ZERO}
+		s.set_input(input)
+		s.advance(1.0/float(fps))
+	return state_hash(s)
 func run() -> void:
+	for script: GDScript in [Brick,Orbit,Shield]:
+		var hash:=replay(script,"",60)
+		check(hash==replay(script,"",30) and hash==replay(script,"",120),"M2-004 replay "+script.resource_path)
+		print("REPLAY ",script.resource_path," ",hash)
+	check(Commerce.policy_access("G09",true,Commerce.Entitlement.PRO) and not Commerce.policy_access("G09",false,Commerce.Entitlement.PRO) and not Commerce.policy_access("G09",true,Commerce.Entitlement.FREE),"M2-009 policy PRO")
+	
 	rng.seed=17
 	var b:=Brick.new()
 	b.create(rng,"normal")
@@ -51,6 +76,24 @@ func run() -> void:
 	b.lives=1
 	check(not b.step({},1.0/60,rng).is_empty() and b.lives==0,"AC-G03-03 terminal")
 	b.create(rng,"normal")
+	var corner:=Geo.sweep_circle_rect(Vector2(135,95),Vector2(40,40),5,Rect2(160,120,34,20))
+	check(not corner.is_empty() and corner.normal.x<0 and corner.normal.y<0,"M2-004 corner")
+	b.blocks=[{"id":1,"rect":Rect2(160,120,34,20),"hp":1,"initial":1}]
+	b.serving=false
+	b.ball=Vector2(177,150)
+	b.velocity=Vector2.UP*Brick.H*1.5
+	b.speed=Brick.H*1.5
+	b.step({},0.1,rng)
+	check(b.phase==2 and b.serving and b.score==300,"M2-004 clear at speed")
+	var pause_session:=Session.new()
+	var pause_brick:=Brick.new()
+	pause_session.configure(pause_brick,42,"normal")
+	pause_session.start()
+	pause_brick.wide_timer=10
+	pause_session.pause()
+	pause_session.advance(1.0)
+	check(pause_brick.wide_timer==10,"M2-004 power-up paused")
+	b.create(rng,"normal")
 	var old:=b.paddle
 	b.step({"analog":{"paddle":{"id":4,"delta":Vector2(200,0)}}},1.0/60,rng)
 	check(b.paddle>old and b.paddle-old<=12.001,"AC-G03-04 no jump")
@@ -81,6 +124,14 @@ func run() -> void:
 	check(orbit.lives==old_lives-1 and orbit.respawn>=0,"AC-G09-03 one loss")
 	orbit.step({},1.0/60,rng)
 	check(orbit.lives==old_lives-1,"AC-G09-03 no repeat")
+	orbit.create(rng,"normal")
+	orbit.rocks.clear()
+	orbit.add_rock(Vector2(2,120),Vector2.ZERO,0)
+	orbit.add_rock(Vector2(300,80),Vector2.ZERO,0)
+	orbit.shots=[{"pos":Vector2(638,120),"vel":Vector2(380,0),"ttl":1.0},{"pos":Vector2(639,120),"vel":Vector2(380,0),"ttl":1.0}]
+	orbit.step({"pressed":{"secondary":Vector2.ZERO}},1.0/60,rng)
+	check(orbit.score==140 and orbit.rocks.size()==1,"M2-004 seam and simultaneous shots")
+	check(orbit.dash_cd>9.9,"M2-004 dash cooldown")
 	var shield:=Shield.new()
 	shield.create(rng,"normal")
 	check(shield.fire(Vector2(40,180)) and shield.ammo==[9,10],"AC-G10-01 launcher A")
@@ -121,8 +172,15 @@ func run() -> void:
 		view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		await process_frame
 		check(view.host.session.state==Session.State.PAUSED,"M2 intro "+id)
-		check(view.pause_button.size.y/float(view.fitted.scale)>=47.99,"M2-001 pause size "+id) if view.fitted.scale>0 else check(false,"M2-001 layout "+id)
+		check(view.fitted.scale>0 and view.pause_button.size.y>=47.99*float(view.fitted.scale),"M2-001 pause size "+id)
+		check(view.host.excluded_touch.position.y>=8,"M2-001 margin "+id)
 		view._resume()
+		if id=="G10":
+			var rect: Rect2=view.fitted.rect
+			view.host.route_touch(1,rect.position+Vector2(600,30)*float(view.fitted.scale),true)
+			check(view.host.router.snapshot().is_empty(),"M2-004 HUD no shot")
+			view.host.route_touch(2,rect.position+Vector2(600,52)*float(view.fitted.scale),true)
+			check(view.host.router.snapshot().is_empty(),"M2-001 pause overlap no shot")
 		view.pause_game()
 		check(view.host.session.state==Session.State.PAUSED,"M2 pause "+id)
 		view.queue_free()

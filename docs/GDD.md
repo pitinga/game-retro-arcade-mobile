@@ -77,3 +77,7 @@ Diferenças deliberadas e riscos residuais: [matriz](research/SIMILARITY.md). To
 ## 9. Roadmap / Definition of Done
 M0 docs + revisão da baseline e decisão de stack; M1 shell e engine, fakes ads/billing, catálogo; M2 G03 (primeiro vertical slice completo), G09 e G10; M3 G01 e G02 (FREE completo); M4 G04 e G05; M5 G07; M6 G06 e G08; M7 integração de lojas, assets finais, QA e aprovação legal/visual. Cada módulo: specs → protótipo → testes → assets originais → controles reais → revisão de jogabilidade → PR/CI → evidências. Sem merge de falha P0/P1; seguir checklist. Sem publicação antes de aprovação dos 10, dos fluxos comerciais, privacidade, marca e licenças.
 Decisões abertas: preço, marca final, idioma extra, suporte iOS de lançamento, matriz de hardware, parâmetros após playtest. Resolver com ADR antes da etapa dependente.
+
+
+### Review M2 — ajustes de UI e QA
+Pausa 56×48u, margem superior/direita 8u; em paisagem sobreposição de 8u na borda superior do campo, toque nessa área reservado ao botão e nunca ao jogo. 48dp em aparelho permanece validação física. Controles ajustam altura dentro da faixa, mínimo 48u. QA: APK debug com tag qa_arcade e OS.is_debug_build() abre módulos PRO apenas para validação; sem alteração de entitlement nem recordes PRO. Template release nega o caminho; criar preset release sem tag antes de M7.
