@@ -61,6 +61,14 @@ jobs:
       - name: Testar foundation
         run: godot --headless --path . --script res://tests/test_m1.gd
 
+      - name: Capturas reais do shell (desktop Linux virtual)
+        run: |
+          mkdir -p build/screenshots
+          xvfb-run -a -s "-screen 0 1600x1200x24" godot --path . --script res://tests/capture_shell.gd
+          for f in build/screenshots/*.png; do
+            echo "SCREENSHOT:$(basename "$f"):$(base64 -w0 "$f")"
+          done
+
       - name: Configurar exportador Android do Godot
         shell: bash
         run: |
