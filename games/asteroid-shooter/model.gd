@@ -31,7 +31,7 @@ func create(rng: RandomNumberGenerator,level: String) -> void:
 	dash_cd=0
 	respawn=-1
 	spawn_wave(rng)
-func wrap(point: Vector2) -> Vector2:
+func wrap_position(point: Vector2) -> Vector2:
 	return Vector2(fposmod(point.x,W),fposmod(point.y,H))
 func offset(from: Vector2,to: Vector2) -> Vector2:
 	var d:=to-from
@@ -40,17 +40,17 @@ func radius(size: int) -> float:
 	return [9.0,18.0,30.0,12.0][size]
 func add_rock(pos: Vector2,vel: Vector2,size: int) -> void:
 	next_id+=1
-	rocks.append({"id":next_id,"pos":wrap(pos),"vel":vel,"size":size})
+	rocks.append({"id":next_id,"pos":wrap_position(pos),"vel":vel,"size":size})
 func spawn_wave(rng: RandomNumberGenerator) -> void:
 	rocks.clear()
 	shots.clear()
 	var count:=mini(9,int([3,4,5][difficulty])+wave-1)
 	for index in count:
-		var pos:=wrap(ship+Vector2.from_angle(TAU*float(index)/float(count))*100)
+		var pos:=wrap_position(ship+Vector2.from_angle(TAU*float(index)/float(count))*100)
 		var speed:=rng.randf_range(28,75)*float([0.8,1,1.2][difficulty])
 		add_rock(pos,Vector2.from_angle(rng.randf_range(0,TAU))*speed,2)
 	if wave>=3:
-		add_rock(wrap(ship+Vector2(W/2,0)),Vector2.ZERO,3)
+		add_rock(wrap_position(ship+Vector2(W/2,0)),Vector2.ZERO,3)
 	immune=1.2
 	wave_wait=-1
 func destroy(index: int,rng: RandomNumberGenerator) -> void:
@@ -113,7 +113,7 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 			dash_cd=float([8,10,12][difficulty])
 		velocity=(velocity*exp(-0.12*dt)).limit_length(225)
 		if (input.get("fire",false) or input.get("action",false)) and fire_cd<=0 and shots.size()<12:
-			shots.append({"pos":wrap(ship+forward*12),"vel":forward*380+velocity,"ttl":1.0})
+			shots.append({"pos":wrap_position(ship+forward*12),"vel":forward*380+velocity,"ttl":1.0})
 			fire_cd=0.18
 		for rock: Dictionary in rocks:
 			if rock.size==3:
@@ -126,7 +126,7 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 						return {"score":score,"progress":wave,"reason":"lost"}
 					respawn=0
 					break
-		ship=wrap(ship+velocity*dt)
+		ship=wrap_position(ship+velocity*dt)
 	for i in range(shots.size()-1,-1,-1):
 		var shot: Dictionary=shots[i]
 		var best: float=2
@@ -141,12 +141,12 @@ func step(input: Dictionary,dt: float,rng: RandomNumberGenerator) -> Dictionary:
 			destroy(target,rng)
 			shots.remove_at(i)
 		else:
-			shot.pos=wrap(Vector2(shot.pos)+Vector2(shot.vel)*dt)
+			shot.pos=wrap_position(Vector2(shot.pos)+Vector2(shot.vel)*dt)
 			shot.ttl-=dt
 			if shot.ttl<=0:
 				shots.remove_at(i)
 	for rock: Dictionary in rocks:
-		rock.pos=wrap(Vector2(rock.pos)+Vector2(rock.vel)*dt)
+		rock.pos=wrap_position(Vector2(rock.pos)+Vector2(rock.vel)*dt)
 	if rocks.is_empty() and respawn<0:
 		score+=200
 		wave_wait=1.5
