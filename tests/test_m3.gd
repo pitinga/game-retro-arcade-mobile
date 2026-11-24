@@ -161,7 +161,7 @@ func run() -> void:
 		if a.day>initial and max_pass>=required:
 			agents+=1
 		print("RALLY AGENT seed=",seed," passes=",max_pass," required=",required," advanced=",a.day>initial)
-			rng.seed=seed
+		rng.seed=seed
 		a.create(rng,["easy","normal","hard"][seed%3])
 		a.day=12
 		a.begin_day(rng)
